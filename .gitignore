@@ -1,0 +1,71 @@
+# Dependency directories
+vendor/
+node_modules/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Log files
+*.log
+logs/
+
+# Runtime data
+storage/
+cache/
+sessions/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+
+# Temp files
+*.tmp
+temp/
+
+# Uploads directory (user uploaded content)
+uploads/
+
+# Composer files (except lock file)
+composer.phar
+/composer.lock
+
+# Apache .htaccess (if using)
+!.htaccess
+
+# MySQL dump files
+*.sql
+*.dump
+
+# Testing coverage
+coverage/
+htmlcov/
+
+# Build artifacts
+dist/
+build/
+
+# Config overrides
+config.local.php
+*.local.php
+
+# Custom
+*.db
+*.sqlite
+*.sqlite3
