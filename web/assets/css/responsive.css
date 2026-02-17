@@ -1,0 +1,550 @@
+/* 共享停车位平台 - 响应式样式表 */
+/* 移动端优先设计 */
+
+/* ===== 小屏幕（手机，小于576px） ===== */
+@media (max-width: 576px) {
+    .container {
+        padding: 0 var(--spacing-md);
+    }
+
+    /* 导航栏调整为移动端 */
+    .nav-menu {
+        display: none;
+        position: fixed;
+        top: 70px;
+        left: 0;
+        right: 0;
+        background-color: white;
+        flex-direction: column;
+        padding: var(--spacing-md);
+        box-shadow: var(--shadow-lg);
+        z-index: 1000;
+        max-height: calc(100vh - 70px);
+        overflow-y: auto;
+    }
+
+    .nav-menu.show {
+        display: flex;
+    }
+
+    .nav-menu a {
+        padding: var(--spacing-md);
+        border-bottom: 1px solid var(--border-color);
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .nav-menu a:last-child {
+        border-bottom: none;
+    }
+
+    .user-actions .btn {
+        display: none;
+    }
+
+    .user-menu .user-btn span {
+        display: none;
+    }
+
+    .mobile-menu-btn {
+        display: block;
+    }
+
+    .dropdown-menu {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    /* 首页调整 */
+    .hero {
+        padding: var(--spacing-xl) 0;
+        border-radius: 0;
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .hero h1 {
+        font-size: var(--font-size-xl);
+    }
+
+    .hero p {
+        font-size: var(--font-size-md);
+    }
+
+    .search-box {
+        grid-template-columns: 1fr;
+        padding: var(--spacing-md);
+        gap: var(--spacing-md);
+    }
+
+    .hero-stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-md);
+    }
+
+    .hero-stats .stat:nth-child(3),
+    .hero-stats .stat:nth-child(4) {
+        margin-top: var(--spacing-md);
+    }
+
+    .features-grid,
+    .steps {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
+    }
+
+    /* 认证页面调整 */
+    .auth-card {
+        padding: var(--spacing-lg);
+        margin: 0 var(--spacing-md);
+        border-radius: var(--radius-md);
+    }
+
+    .social-login {
+        grid-template-columns: 1fr;
+    }
+
+    /* 停车位页面调整 */
+    .parking-layout {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-lg);
+    }
+
+    .parking-sidebar {
+        position: static;
+    }
+
+    .filter-card {
+        padding: var(--spacing-lg);
+    }
+
+    .parking-header {
+        flex-direction: column;
+        gap: var(--spacing-md);
+        align-items: stretch;
+    }
+
+    .sort-options {
+        justify-content: space-between;
+    }
+
+    .parking-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .price-range {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    .facilities {
+        grid-template-columns: 1fr;
+    }
+
+    .captcha-container {
+        flex-direction: column;
+    }
+
+    /* 页脚调整 */
+    .footer-content {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+
+    .social-links {
+        justify-content: center;
+    }
+
+    .footer-section ul li i {
+        width: auto;
+        margin-right: var(--spacing-sm);
+    }
+}
+
+/* ===== 中等屏幕（平板，577px - 992px） ===== */
+@media (min-width: 577px) and (max-width: 992px) {
+    .container {
+        max-width: 100%;
+        padding: 0 var(--spacing-lg);
+    }
+
+    /* 导航栏调整 */
+    .nav-menu {
+        gap: var(--spacing-md);
+    }
+
+    .nav-menu a span {
+        display: none;
+    }
+
+    .nav-menu a i {
+        font-size: var(--font-size-lg);
+    }
+
+    .user-btn span {
+        display: none;
+    }
+
+    /* 首页调整 */
+    .search-box {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .search-box .btn-lg {
+        grid-column: span 2;
+    }
+
+    .hero-stats {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .steps {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* 停车位页面调整 */
+    .parking-layout {
+        grid-template-columns: 250px 1fr;
+        gap: var(--spacing-lg);
+    }
+
+    .parking-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .filter-card {
+        padding: var(--spacing-lg);
+    }
+
+    /* 认证页面调整 */
+    .auth-card {
+        max-width: 400px;
+    }
+}
+
+/* ===== 大屏幕（桌面，993px - 1200px） ===== */
+@media (min-width: 993px) and (max-width: 1200px) {
+    .container {
+        max-width: 100%;
+        padding: 0 var(--spacing-xl);
+    }
+
+    .parking-layout {
+        grid-template-columns: 280px 1fr;
+    }
+
+    .parking-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* ===== 超大屏幕（桌面，大于1200px） ===== */
+@media (min-width: 1201px) {
+    .container {
+        max-width: 1200px;
+    }
+
+    .parking-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* ===== 横屏手机特殊处理 ===== */
+@media (max-height: 600px) and (orientation: landscape) {
+    .auth-container {
+        min-height: auto;
+        padding: var(--spacing-md) 0;
+    }
+
+    .auth-card {
+        padding: var(--spacing-lg);
+    }
+
+    .hero {
+        padding: var(--spacing-lg) 0;
+    }
+
+    .search-box {
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .hero-stats {
+        display: none;
+    }
+}
+
+/* ===== 高DPI屏幕优化 ===== */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .parking-card-image img {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+}
+
+/* ===== 深色模式支持（基础） ===== */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --text-primary: #ffffff;
+        --text-secondary: #cccccc;
+        --text-light: #999999;
+
+        --bg-light: #2d3748;
+        --bg-white: #1a202c;
+        --bg-gray: #1a202c;
+        --border-color: #4a5568;
+    }
+
+    body {
+        background-color: var(--bg-gray);
+        color: var(--text-primary);
+    }
+
+    .header,
+    .filter-card,
+    .auth-card,
+    .parking-card,
+    .feature-card,
+    .parking-header {
+        background-color: var(--bg-white);
+        border-color: var(--border-color);
+    }
+
+    .search-input {
+        background-color: var(--bg-light);
+        border-color: var(--border-color);
+    }
+
+    .search-input input {
+        color: var(--text-primary);
+        background-color: transparent;
+    }
+
+    .btn-outline {
+        background-color: transparent;
+        color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .btn-outline:hover {
+        background-color: var(--primary-color);
+        color: white;
+    }
+
+    .feature {
+        background-color: var(--bg-light);
+        color: var(--text-secondary);
+    }
+
+    .footer {
+        background-color: #1a202c;
+    }
+}
+
+/* ===== 打印样式 ===== */
+@media print {
+    .header,
+    .footer,
+    .search-box,
+    .btn,
+    .mobile-menu-btn,
+    .view-toggle,
+    .filter-card,
+    .social-login,
+    .auth-divider {
+        display: none !important;
+    }
+
+    body {
+        background-color: white !important;
+        color: black !important;
+        font-size: 12pt;
+    }
+
+    .container {
+        max-width: 100% !important;
+        padding: 0 !important;
+    }
+
+    .parking-layout {
+        grid-template-columns: 1fr !important;
+    }
+
+    .parking-card {
+        break-inside: avoid;
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+    }
+
+    a {
+        color: black !important;
+        text-decoration: underline !important;
+    }
+
+    .main-content {
+        padding: 0 !important;
+        min-height: auto !important;
+    }
+}
+
+/* ===== 运动偏好减少 ===== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .btn:hover,
+    .parking-card:hover,
+    .feature-card:hover {
+        transform: none !important;
+    }
+}
+
+/* ===== 触摸设备优化 ===== */
+@media (hover: none) and (pointer: coarse) {
+    .btn,
+    .view-btn,
+    .page-btn,
+    .user-btn,
+    .nav-menu a {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    .checkbox input {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        font-size: 16px; /* 防止iOS自动缩放 */
+    }
+
+    .dropdown-menu a {
+        padding: var(--spacing-lg);
+    }
+
+    /* 增加触摸目标大小 */
+    .feature-icon {
+        font-size: 56px;
+    }
+
+    .step-number {
+        width: 70px;
+        height: 70px;
+        font-size: var(--font-size-xxl);
+    }
+
+    /* 禁用悬停效果 */
+    .btn:hover,
+    .parking-card:hover,
+    .feature-card:hover {
+        transform: none;
+        box-shadow: var(--shadow-md);
+    }
+
+    .nav-menu a:hover {
+        border-bottom-color: transparent;
+    }
+
+    .nav-menu a.active {
+        border-bottom-color: var(--primary-color);
+    }
+
+    .user-menu:hover .dropdown-menu {
+        display: none;
+    }
+
+    /* 添加触摸激活状态 */
+    .btn:active,
+    .view-btn:active,
+    .page-btn:active {
+        transform: scale(0.98);
+    }
+
+    .parking-card:active {
+        transform: scale(0.99);
+    }
+}
+
+/* ===== 折叠屏设备优化 ===== */
+@media (spanning: single-fold-vertical) {
+    .container {
+        max-width: calc(100vw - env(fold-width));
+    }
+}
+
+/* ===== 超大文字模式 ===== */
+@media (prefers-contrast: high) {
+    :root {
+        --primary-color: #0056b3;
+        --primary-dark: #004085;
+        --secondary-color: #218838;
+        --secondary-dark: #1e7e34;
+
+        --text-primary: #000000;
+        --text-secondary: #333333;
+        --text-light: #666666;
+
+        --border-color: #000000;
+    }
+
+    .btn {
+        border-width: 3px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        border-width: 3px;
+    }
+}
+
+/* ===== 低对比度模式 ===== */
+@media (prefers-contrast: low) {
+    :root {
+        --text-secondary: #888888;
+        --text-light: #aaaaaa;
+        --border-color: #cccccc;
+    }
+}
+
+/* ===== 强制颜色模式 ===== */
+@media (forced-colors: active) {
+    .btn,
+    .form-group input,
+    .form-group select,
+    .form-group textarea,
+    .parking-card,
+    .feature-card,
+    .filter-card,
+    .auth-card {
+        border: 1px solid ButtonText;
+        forced-color-adjust: none;
+    }
+
+    .btn-primary {
+        background-color: ButtonFace;
+        color: ButtonText;
+    }
+
+    .btn-primary:hover {
+        background-color: Highlight;
+        color: HighlightText;
+    }
+}
