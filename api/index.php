@@ -15,6 +15,8 @@ define('ROOT_PATH', dirname(API_ROOT));
 // 自动加载配置和工具类
 require_once API_ROOT . '/config/constants.php';
 require_once API_ROOT . '/config/database.php';
+require_once API_ROOT . '/lib/auth.php';
+require_once API_ROOT . '/lib/parking.php';
 
 // 设置响应头
 header('Content-Type: application/json; charset=utf-8');
@@ -119,14 +121,135 @@ function handleAuth($method, $pathSegments, $data) {
         case 'POST':
             switch ($action) {
                 case 'register':
-                    return ['success' => true, 'message' => '注册功能待实现', 'data' => $data];
+                    try {
+                        $result = Auth::register($data);
+                        return [
+                            'success' => true,
+                            'message' => SUCCESS_CREATED,
+                            'data' => $result
+                        ];
+                    } catch (Exception $e) {
+                        return [
+                            'success' => false,
+                            'error' => [
+                                'code' => $e->getCode() ?: HTTP_BAD_REQUEST,
+                                'message' => $e->getMessage()
+                            ]
+                        ];
+                    }
+
                 case 'login':
-                    return ['success' => true, 'message' => '登录功能待实现', 'data' => $data];
+                    try {
+                        $result = Auth::login($data);
+                        return [
+                            'success' => true,
+                            'message' => '登录成功',
+                            'data' => $result
+                        ];
+                    } catch (Exception $e) {
+                        return [
+                            'success' => false,
+                            'error' => [
+                                'code' => $e->getCode() ?: HTTP_UNAUTHORIZED,
+                                'message' => $e->getMessage()
+                            ]
+                        ];
+                    }
+
                 case 'logout':
-                    return ['success' => true, 'message' => '退出登录功能待实现'];
+                    // 客户端应删除本地存储的token
+                    return [
+                        'success' => true,
+                        'message' => '退出登录成功'
+                    ];
+
+                case 'send-captcha':
+                    try {
+                        $phone = $data['phone'] ?? '';
+                        $type = $data['type'] ?? 'register';
+
+                        if (empty($phone)) {
+                            throw new Exception('手机号不能为空', HTTP_BAD_REQUEST);
+                        }
+
+                        $result = Auth::sendVerificationCode($phone, $type);
+                        return [
+                            'success' => true,
+                            'message' => '验证码发送成功',
+                            'data' => $result
+                        ];
+                    } catch (Exception $e) {
+                        return [
+                            'success' => false,
+                            'error' => [
+                                'code' => $e->getCode() ?: HTTP_BAD_REQUEST,
+                                'message' => $e->getMessage()
+                            ]
+                        ];
+                    }
+
+                case 'verify-code':
+                    try {
+                        $email = $data['email'] ?? '';
+                        $phone = $data['phone'] ?? '';
+                        $code = $data['code'] ?? '';
+                        $type = $data['type'] ?? 'register';
+
+                        if (empty($code)) {
+                            throw new Exception('验证码不能为空', HTTP_BAD_REQUEST);
+                        }
+
+                        Auth::verifyCode($email, $phone, $code, $type);
+
+                        // 如果是注册验证，完成用户验证
+                        if ($type === 'register' && !empty($email)) {
+                            Auth::completeVerification($email);
+                        }
+
+                        return [
+                            'success' => true,
+                            'message' => '验证码验证成功'
+                        ];
+                    } catch (Exception $e) {
+                        return [
+                            'success' => false,
+                            'error' => [
+                                'code' => $e->getCode() ?: HTTP_BAD_REQUEST,
+                                'message' => $e->getMessage()
+                            ]
+                        ];
+                    }
+
                 default:
                     throw new Exception('操作不存在', 404);
             }
+
+        case 'GET':
+            // 获取当前用户信息
+            if ($action === 'me') {
+                try {
+                    $user = Auth::getCurrentUser();
+                    if (!$user) {
+                        throw new Exception(ERROR_AUTHENTICATION, HTTP_UNAUTHORIZED);
+                    }
+
+                    $userProfile = Auth::getUserProfile($user['user_id']);
+                    return [
+                        'success' => true,
+                        'data' => $userProfile
+                    ];
+                } catch (Exception $e) {
+                    return [
+                        'success' => false,
+                        'error' => [
+                            'code' => $e->getCode() ?: HTTP_UNAUTHORIZED,
+                            'message' => $e->getMessage()
+                        ]
+                    ];
+                }
+            }
+            throw new Exception('操作不存在', 404);
+
         default:
             throw new Exception('方法不允许', 405);
     }
@@ -142,18 +265,139 @@ function handleUsers($method, $pathSegments, $data) {
         case 'GET':
             switch ($action) {
                 case 'profile':
-                    return ['success' => true, 'message' => '获取用户资料功能待实现'];
+                    try {
+                        // 获取当前用户
+                        $currentUser = Auth::getCurrentUser();
+                        if (!$currentUser) {
+                            throw new Exception(ERROR_AUTHENTICATION, HTTP_UNAUTHORIZED);
+                        }
+
+                        // 获取用户资料
+                        $userProfile = Auth::getUserProfile($currentUser['user_id']);
+                        return [
+                            'success' => true,
+                            'data' => $userProfile
+                        ];
+                    } catch (Exception $e) {
+                        return [
+                            'success' => false,
+                            'error' => [
+                                'code' => $e->getCode() ?: HTTP_INTERNAL_ERROR,
+                                'message' => $e->getMessage()
+                            ]
+                        ];
+                    }
+
                 case '':
-                    return ['success' => true, 'message' => '获取用户列表功能待实现'];
+                    // 获取用户列表（仅管理员）
+                    try {
+                        $currentUser = Auth::getCurrentUser();
+                        if (!$currentUser || $currentUser['role'] !== 'admin') {
+                            throw new Exception(ERROR_AUTHORIZATION, HTTP_FORBIDDEN);
+                        }
+
+                        // 分页参数
+                        $page = isset($data['page']) ? max(1, intval($data['page'])) : 1;
+                        $limit = isset($data['limit']) ? min(MAX_PAGE_SIZE, max(1, intval($data['limit']))) : DEFAULT_PAGE_SIZE;
+                        $offset = ($page - 1) * $limit;
+
+                        // 获取用户列表
+                        $users = db()->query(
+                            "SELECT id, username, email, phone, real_name, avatar_url,
+                                    role, is_verified, is_active, created_at, last_login_at
+                             FROM users
+                             ORDER BY id DESC
+                             LIMIT ? OFFSET ?",
+                            [$limit, $offset]
+                        );
+
+                        // 获取总数
+                        $total = db()->querySingle("SELECT COUNT(*) as count FROM users")['count'];
+
+                        return [
+                            'success' => true,
+                            'data' => [
+                                'users' => $users,
+                                'pagination' => [
+                                    'page' => $page,
+                                    'limit' => $limit,
+                                    'total' => $total,
+                                    'pages' => ceil($total / $limit)
+                                ]
+                            ]
+                        ];
+                    } catch (Exception $e) {
+                        return [
+                            'success' => false,
+                            'error' => [
+                                'code' => $e->getCode() ?: HTTP_INTERNAL_ERROR,
+                                'message' => $e->getMessage()
+                            ]
+                        ];
+                    }
+
                 default:
-                    // 假设是用户ID
-                    return ['success' => true, 'message' => '获取用户详情功能待实现', 'user_id' => $action];
+                    // 获取特定用户详情（仅管理员或自己）
+                    try {
+                        $userId = intval($action);
+                        if ($userId <= 0) {
+                            throw new Exception(ERROR_NOT_FOUND, HTTP_NOT_FOUND);
+                        }
+
+                        $currentUser = Auth::getCurrentUser();
+                        if (!$currentUser) {
+                            throw new Exception(ERROR_AUTHENTICATION, HTTP_UNAUTHORIZED);
+                        }
+
+                        // 检查权限：管理员或查看自己的资料
+                        if ($currentUser['role'] !== 'admin' && $currentUser['user_id'] != $userId) {
+                            throw new Exception(ERROR_AUTHORIZATION, HTTP_FORBIDDEN);
+                        }
+
+                        $userProfile = Auth::getUserProfile($userId);
+                        return [
+                            'success' => true,
+                            'data' => $userProfile
+                        ];
+                    } catch (Exception $e) {
+                        return [
+                            'success' => false,
+                            'error' => [
+                                'code' => $e->getCode() ?: HTTP_INTERNAL_ERROR,
+                                'message' => $e->getMessage()
+                            ]
+                        ];
+                    }
             }
+
         case 'PUT':
             if ($action === 'profile') {
-                return ['success' => true, 'message' => '更新用户资料功能待实现', 'data' => $data];
+                try {
+                    // 获取当前用户
+                    $currentUser = Auth::getCurrentUser();
+                    if (!$currentUser) {
+                        throw new Exception(ERROR_AUTHENTICATION, HTTP_UNAUTHORIZED);
+                    }
+
+                    // 更新用户资料
+                    $result = Auth::updateUserProfile($currentUser['user_id'], $data);
+                    return [
+                        'success' => true,
+                        'message' => SUCCESS_UPDATED,
+                        'data' => $result
+                    ];
+                } catch (Exception $e) {
+                    return [
+                        'success' => false,
+                        'error' => [
+                            'code' => $e->getCode() ?: HTTP_INTERNAL_ERROR,
+                            'message' => $e->getMessage()
+                        ]
+                    ];
+                }
             }
             throw new Exception('操作不存在', 404);
+
         default:
             throw new Exception('方法不允许', 405);
     }
@@ -171,32 +415,239 @@ function handleParking($method, $pathSegments, $data) {
             switch ($action) {
                 case 'spots':
                     if (!empty($id)) {
-                        return ['success' => true, 'message' => '获取停车位详情功能待实现', 'spot_id' => $id];
+                        // 获取停车位详情
+                        try {
+                            // 获取当前用户（如果已登录）
+                            $currentUser = Auth::getCurrentUser();
+                            $userId = $currentUser ? $currentUser['user_id'] : null;
+
+                            $spot = Parking::getSpotById($id, $userId);
+                            if (!$spot) {
+                                throw new Exception(ERROR_NOT_FOUND, HTTP_NOT_FOUND);
+                            }
+
+                            // 增加查看次数
+                            Parking::incrementViewCount($id);
+
+                            return [
+                                'success' => true,
+                                'data' => $spot
+                            ];
+                        } catch (Exception $e) {
+                            return [
+                                'success' => false,
+                                'error' => [
+                                    'code' => $e->getCode() ?: HTTP_INTERNAL_ERROR,
+                                    'message' => $e->getMessage()
+                                ]
+                            ];
+                        }
                     } else {
-                        return ['success' => true, 'message' => '获取停车位列表功能待实现'];
+                        // 获取停车位列表（搜索）
+                        try {
+                            // 解析查询参数
+                            $filters = $data;
+                            $page = isset($data['page']) ? max(1, intval($data['page'])) : 1;
+                            $limit = isset($data['limit']) ? min(MAX_PAGE_SIZE, max(1, intval($data['limit']))) : DEFAULT_PAGE_SIZE;
+
+                            $result = Parking::searchSpots($filters, $page, $limit);
+                            return [
+                                'success' => true,
+                                'data' => $result
+                            ];
+                        } catch (Exception $e) {
+                            return [
+                                'success' => false,
+                                'error' => [
+                                    'code' => $e->getCode() ?: HTTP_INTERNAL_ERROR,
+                                    'message' => $e->getMessage()
+                                ]
+                            ];
+                        }
                     }
+
                 case 'search':
-                    return ['success' => true, 'message' => '搜索停车位功能待实现', 'params' => $data];
+                    // 搜索停车位（与/spots相同，为了兼容性保留）
+                    try {
+                        $filters = $data;
+                        $page = isset($data['page']) ? max(1, intval($data['page'])) : 1;
+                        $limit = isset($data['limit']) ? min(MAX_PAGE_SIZE, max(1, intval($data['limit']))) : DEFAULT_PAGE_SIZE;
+
+                        $result = Parking::searchSpots($filters, $page, $limit);
+                        return [
+                            'success' => true,
+                            'data' => $result
+                        ];
+                    } catch (Exception $e) {
+                        return [
+                            'success' => false,
+                            'error' => [
+                                'code' => $e->getCode() ?: HTTP_INTERNAL_ERROR,
+                                'message' => $e->getMessage()
+                            ]
+                        ];
+                    }
+
+                case 'my':
+                    // 获取我的车位
+                    try {
+                        $currentUser = Auth::getCurrentUser();
+                        if (!$currentUser) {
+                            throw new Exception(ERROR_AUTHENTICATION, HTTP_UNAUTHORIZED);
+                        }
+
+                        $page = isset($data['page']) ? max(1, intval($data['page'])) : 1;
+                        $limit = isset($data['limit']) ? min(MAX_PAGE_SIZE, max(1, intval($data['limit']))) : DEFAULT_PAGE_SIZE;
+
+                        $result = Parking::getUserSpots($currentUser['user_id'], $page, $limit);
+                        return [
+                            'success' => true,
+                            'data' => $result
+                        ];
+                    } catch (Exception $e) {
+                        return [
+                            'success' => false,
+                            'error' => [
+                                'code' => $e->getCode() ?: HTTP_INTERNAL_ERROR,
+                                'message' => $e->getMessage()
+                            ]
+                        ];
+                    }
+
+                case 'availability':
+                    // 检查车位可用性
+                    if (!empty($id)) {
+                        try {
+                            $startTime = $data['start_time'] ?? '';
+                            $endTime = $data['end_time'] ?? '';
+
+                            if (empty($startTime) || empty($endTime)) {
+                                throw new Exception('开始时间和结束时间不能为空', HTTP_BAD_REQUEST);
+                            }
+
+                            $isAvailable = Parking::checkAvailability($id, $startTime, $endTime);
+                            return [
+                                'success' => true,
+                                'data' => [
+                                    'is_available' => $isAvailable,
+                                    'spot_id' => $id,
+                                    'start_time' => $startTime,
+                                    'end_time' => $endTime
+                                ]
+                            ];
+                        } catch (Exception $e) {
+                            return [
+                                'success' => false,
+                                'error' => [
+                                    'code' => $e->getCode() ?: HTTP_INTERNAL_ERROR,
+                                    'message' => $e->getMessage()
+                                ]
+                            ];
+                        }
+                    }
+                    throw new Exception('车位ID不能为空', HTTP_BAD_REQUEST);
+
                 case '':
-                    return ['success' => true, 'message' => '停车位API'];
+                    // 返回停车位API信息
+                    return [
+                        'success' => true,
+                        'message' => '停车位API',
+                        'endpoints' => [
+                            'GET /api/parking/spots' => '获取停车位列表/搜索',
+                            'GET /api/parking/spots/{id}' => '获取停车位详情',
+                            'POST /api/parking/spots' => '创建停车位',
+                            'PUT /api/parking/spots/{id}' => '更新停车位',
+                            'DELETE /api/parking/spots/{id}' => '删除停车位',
+                            'GET /api/parking/my' => '获取我的车位',
+                            'GET /api/parking/availability/{id}' => '检查车位可用性'
+                        ]
+                    ];
+
                 default:
                     throw new Exception('操作不存在', 404);
             }
+
         case 'POST':
             if ($action === 'spots') {
-                return ['success' => true, 'message' => '创建停车位功能待实现', 'data' => $data];
+                // 创建停车位
+                try {
+                    $currentUser = Auth::getCurrentUser();
+                    if (!$currentUser) {
+                        throw new Exception(ERROR_AUTHENTICATION, HTTP_UNAUTHORIZED);
+                    }
+
+                    $result = Parking::createSpot($currentUser['user_id'], $data);
+                    return [
+                        'success' => true,
+                        'message' => SUCCESS_CREATED,
+                        'data' => $result
+                    ];
+                } catch (Exception $e) {
+                    return [
+                        'success' => false,
+                        'error' => [
+                            'code' => $e->getCode() ?: HTTP_INTERNAL_ERROR,
+                            'message' => $e->getMessage()
+                        ]
+                    ];
+                }
             }
             throw new Exception('操作不存在', 404);
+
         case 'PUT':
             if ($action === 'spots' && !empty($id)) {
-                return ['success' => true, 'message' => '更新停车位功能待实现', 'spot_id' => $id, 'data' => $data];
+                // 更新停车位
+                try {
+                    $currentUser = Auth::getCurrentUser();
+                    if (!$currentUser) {
+                        throw new Exception(ERROR_AUTHENTICATION, HTTP_UNAUTHORIZED);
+                    }
+
+                    $result = Parking::updateSpot($id, $currentUser['user_id'], $data);
+                    return [
+                        'success' => true,
+                        'message' => SUCCESS_UPDATED,
+                        'data' => $result
+                    ];
+                } catch (Exception $e) {
+                    return [
+                        'success' => false,
+                            'error' => [
+                            'code' => $e->getCode() ?: HTTP_INTERNAL_ERROR,
+                            'message' => $e->getMessage()
+                        ]
+                    ];
+                }
             }
             throw new Exception('操作不存在', 404);
+
         case 'DELETE':
             if ($action === 'spots' && !empty($id)) {
-                return ['success' => true, 'message' => '删除停车位功能待实现', 'spot_id' => $id];
+                // 删除停车位
+                try {
+                    $currentUser = Auth::getCurrentUser();
+                    if (!$currentUser) {
+                        throw new Exception(ERROR_AUTHENTICATION, HTTP_UNAUTHORIZED);
+                    }
+
+                    $result = Parking::deleteSpot($id, $currentUser['user_id']);
+                    return [
+                        'success' => true,
+                        'message' => SUCCESS_DELETED,
+                        'data' => $result
+                    ];
+                } catch (Exception $e) {
+                    return [
+                        'success' => false,
+                        'error' => [
+                            'code' => $e->getCode() ?: HTTP_INTERNAL_ERROR,
+                            'message' => $e->getMessage()
+                        ]
+                    ];
+                }
             }
             throw new Exception('操作不存在', 404);
+
         default:
             throw new Exception('方法不允许', 405);
     }
