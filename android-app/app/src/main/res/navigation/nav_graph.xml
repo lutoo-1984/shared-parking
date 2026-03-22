@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/navigation_home">
+
+    <!-- 首页Fragment -->
+    <fragment
+        android:id="@+id/navigation_home"
+        android:name="com.sharedparking.android.ui.home.HomeFragment"
+        android:label="@string/tab_home"
+        tools:layout="@layout/fragment_home" />
+
+    <!-- 搜索Fragment -->
+    <fragment
+        android:id="@+id/navigation_search"
+        android:name="com.sharedparking.android.ui.search.SearchFragment"
+        android:label="@string/tab_search"
+        tools:layout="@layout/fragment_search" />
+
+    <!-- 预订Fragment -->
+    <fragment
+        android:id="@+id/navigation_bookings"
+        android:name="com.sharedparking.android.ui.bookings.BookingsFragment"
+        android:label="@string/tab_bookings"
+        tools:layout="@layout/fragment_bookings" />
+
+    <!-- 个人中心Fragment -->
+    <fragment
+        android:id="@+id/navigation_profile"
+        android:name="com.sharedparking.android.ui.profile.ProfileFragment"
+        android:label="@string/tab_profile"
+        tools:layout="@layout/fragment_profile" />
+
+</navigation>

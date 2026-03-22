@@ -95,7 +95,7 @@ define('SUCCESS_DELETED', '删除成功');
 define('SUCCESS_OPERATION', '操作成功');
 
 // 地图API配置
-define('BAIDU_MAP_AK', getenv('BAIDU_MAP_AK') ?: '');
+define('BAIDU_MAP_AK', 'SN0sXrTjayBcd13iBAaVYswawCGXhOG1');
 define('MAP_DEFAULT_ZOOM', 15);
 define('MAP_MAX_ZOOM', 18);
 define('MAP_MIN_ZOOM', 10);

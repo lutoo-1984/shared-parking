@@ -1,0 +1,28 @@
+// 顶级构建文件，您可以在此添加所有子项目/模块通用的配置选项。
+// 注意：不要将应用程序依赖项放在此处；它们属于
+// 各个模块的 build.gradle 文件
+buildscript {
+    ext {
+        kotlin_version = '1.8.22'
+        compose_version = '1.5.0'
+    }
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.1.4'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}

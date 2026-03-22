@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Spacing dimensions -->
+    <dimen name="spacing_tiny">4dp</dimen>
+    <dimen name="spacing_small">8dp</dimen>
+    <dimen name="spacing_medium">12dp</dimen>
+    <dimen name="spacing_large">16dp</dimen>
+    <dimen name="spacing_xlarge">24dp</dimen>
+    <dimen name="spacing_xxlarge">32dp</dimen>
+    <dimen name="spacing_xxxlarge">48dp</dimen>
+
+    <!-- Margin dimensions -->
+    <dimen name="margin_tiny">4dp</dimen>
+    <dimen name="margin_small">8dp</dimen>
+    <dimen name="margin_medium">16dp</dimen>
+    <dimen name="margin_large">24dp</dimen>
+    <dimen name="margin_xlarge">32dp</dimen>
+
+    <!-- Padding dimensions -->
+    <dimen name="padding_tiny">4dp</dimen>
+    <dimen name="padding_small">8dp</dimen>
+    <dimen name="padding_medium">12dp</dimen>
+    <dimen name="padding_large">16dp</dimen>
+    <dimen name="padding_xlarge">24dp</dimen>
+
+    <!-- Corner radius dimensions -->
+    <dimen name="corner_radius_small">4dp</dimen>
+    <dimen name="corner_radius_medium">8dp</dimen>
+    <dimen name="corner_radius_large">12dp</dimen>
+    <dimen name="corner_radius_xlarge">16dp</dimen>
+    <dimen name="corner_radius_circle">50%</dimen>
+
+    <!-- Elevation dimensions -->
+    <dimen name="elevation_small">2dp</dimen>
+    <dimen name="elevation_medium">4dp</dimen>
+    <dimen name="elevation_large">8dp</dimen>
+    <dimen name="elevation_xlarge">16dp</dimen>
+
+    <!-- Border dimensions -->
+    <dimen name="border_thin">1dp</dimen>
+    <dimen name="border_medium">2dp</dimen>
+    <dimen name="border_thick">3dp</dimen>
+
+    <!-- Icon dimensions -->
+    <dimen name="icon_size_tiny">16dp</dimen>
+    <dimen name="icon_size_small">24dp</dimen>
+    <dimen name="icon_size_medium">32dp</dimen>
+    <dimen name="icon_size_large">48dp</dimen>
+    <dimen name="icon_size_xlarge">64dp</dimen>
+    <dimen name="icon_size_xxlarge">96dp</dimen>
+
+    <!-- Avatar dimensions -->
+    <dimen name="avatar_size_small">40dp</dimen>
+    <dimen name="avatar_size_medium">56dp</dimen>
+    <dimen name="avatar_size_large">80dp</dimen>
+    <dimen name="avatar_size_xlarge">120dp</dimen>
+
+    <!-- Button dimensions -->
+    <dimen name="button_height_small">36dp</dimen>
+    <dimen name="button_height_medium">48dp</dimen>
+    <dimen name="button_height_large">56dp</dimen>
+    <dimen name="button_min_width">88dp</dimen>
+
+    <!-- Input field dimensions -->
+    <dimen name="input_height">56dp</dimen>
+    <dimen name="input_padding_horizontal">12dp</dimen>
+    <dimen name="input_padding_vertical">16dp</dimen>
+
+    <!-- Card dimensions -->
+    <dimen name="card_padding">16dp</dimen>
+    <dimen name="card_margin">8dp</dimen>
+
+    <!-- AppBar dimensions -->
+    <dimen name="appbar_height">56dp</dimen>
+    <dimen name="toolbar_height">56dp</dimen>
+    <dimen name="toolbar_padding_horizontal">16dp</dimen>
+
+    <!-- Bottom Navigation dimensions -->
+    <dimen name="bottom_nav_height">56dp</dimen>
+    <dimen name="bottom_nav_icon_size">24dp</dimen>
+    <dimen name="bottom_nav_text_size">12sp</dimen>
+
+    <!-- Tab dimensions -->
+    <dimen name="tab_height">48dp</dimen>
+    <dimen name="tab_padding_horizontal">16dp</dimen>
+    <dimen name="tab_indicator_height">3dp</dimen>
+
+    <!-- Chip dimensions -->
+    <dimen name="chip_height">32dp</dimen>
+    <dimen name="chip_padding_horizontal">12dp</dimen>
+
+    <!-- Divider dimensions -->
+    <dimen name="divider_height">1dp</dimen>
+    <dimen name="divider_margin_vertical">8dp</dimen>
+
+    <!-- Progress bar dimensions -->
+    <dimen name="progress_bar_size_small">24dp</dimen>
+    <dimen name="progress_bar_size_medium">48dp</dimen>
+    <dimen name="progress_bar_size_large">72dp</dimen>
+
+    <!-- Badge dimensions -->
+    <dimen name="badge_size_small">16dp</dimen>
+    <dimen name="badge_size_medium">20dp</dimen>
+    <dimen name="badge_size_large">24dp</dimen>
+
+    <!-- Map marker dimensions -->
+    <dimen name="map_marker_size">48dp</dimen>
+    <dimen name="map_marker_padding">8dp</dimen>
+
+    <!-- Rating bar dimensions -->
+    <dimen name="rating_bar_size">16dp</dimen>
+    <dimen name="rating_bar_padding">2dp</dimen>
+
+    <!-- Image dimensions -->
+    <dimen name="image_size_small">64dp</dimen>
+    <dimen name="image_size_medium">96dp</dimen>
+    <dimen name="image_size_large">128dp</dimen>
+    <dimen name="image_size_xlarge">192dp</dimen>
+    <dimen name="image_aspect_ratio_16_9">56.25%</dimen>
+    <dimen name="image_aspect_ratio_4_3">75%</dimen>
+    <dimen name="image_aspect_ratio_1_1">100%</dimen>
+
+    <!-- List item dimensions -->
+    <dimen name="list_item_height_small">48dp</dimen>
+    <dimen name="list_item_height_medium">64dp</dimen>
+    <dimen name="list_item_height_large">80dp</dimen>
+    <dimen name="list_item_padding_horizontal">16dp</dimen>
+    <dimen name="list_item_padding_vertical">12dp</dimen>
+
+    <!-- Grid spacing dimensions -->
+    <dimen name="grid_spacing_small">8dp</dimen>
+    <dimen name="grid_spacing_medium">12dp</dimen>
+    <dimen name="grid_spacing_large">16dp</dimen>
+
+    <!-- Screen edge margins -->
+    <dimen name="screen_edge_margin_small">8dp</dimen>
+    <dimen name="screen_edge_margin_medium">16dp</dimen>
+    <dimen name="screen_edge_margin_large">24dp</dimen>
+
+    <!-- Dialog dimensions -->
+    <dimen name="dialog_min_width">280dp</dimen>
+    <dimen name="dialog_max_width">560dp</dimen>
+    <dimen name="dialog_padding">24dp</dimen>
+
+    <!-- Navigation drawer dimensions -->
+    <dimen name="nav_drawer_width">280dp</dimen>
+    <dimen name="nav_header_height">160dp</dimen>
+
+    <!-- Text dimensions -->
+    <dimen name="text_line_height_multiplier">1.2</dimen>
+    <dimen name="text_letter_spacing_small">0.01</dimen>
+    <dimen name="text_letter_spacing_medium">0.02</dimen>
+
+    <!-- Custom dimensions for this app -->
+    <dimen name="parking_spot_card_height">120dp</dimen>
+    <dimen name="parking_spot_image_width">120dp</dimen>
+    <dimen name="booking_summary_height">160dp</dimen>
+    <dimen name="payment_card_height">80dp</dimen>
+</resources>

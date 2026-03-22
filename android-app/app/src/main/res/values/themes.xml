@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme for light mode. -->
+    <style name="Theme.SharedParking.Light" parent="Theme.SharedParking">
+        <!-- Light theme specific overrides -->
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+
+    <!-- Base application theme for dark mode. -->
+    <style name="Theme.SharedParking.Dark" parent="Theme.SharedParking">
+        <!-- Dark theme specific overrides -->
+        <item name="android:windowBackground">@color/night_background</item>
+        <item name="colorSurface">@color/night_surface</item>
+        <item name="android:textColorPrimary">@color/night_text_primary</item>
+        <item name="android:textColorSecondary">@color/night_text_secondary</item>
+        <item name="background">@color/night_background</item>
+        <item name="card_background">@color/night_surface</item>
+        <item name="input_background">@color/night_surface</item>
+        <item name="bottom_nav_background">@color/night_surface</item>
+        <item name="dialog_background">@color/night_surface</item>
+    </style>
+
+    <!-- Theme overlay for fullscreen activities (like splash screen) -->
+    <style name="ThemeOverlay.SharedParking.Fullscreen" parent="ThemeOverlay.MaterialComponents.Dark.ActionBar">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+    </style>
+
+    <!-- Theme overlay for dialogs -->
+    <style name="ThemeOverlay.SharedParking.Dialog" parent="ThemeOverlay.MaterialComponents.Dialog">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="colorPrimary">@color/brand_primary</item>
+        <item name="colorSecondary">@color/brand_secondary</item>
+    </style>
+
+    <!-- Theme overlay for bottom sheets -->
+    <style name="ThemeOverlay.SharedParking.BottomSheet" parent="ThemeOverlay.MaterialComponents.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/Widget.SharedParking.BottomSheet</item>
+    </style>
+
+    <!-- Theme overlay for tooltips -->
+    <style name="ThemeOverlay.SharedParking.Tooltip" parent="ThemeOverlay.MaterialComponents.Tooltip">
+        <item name="android:background">@drawable/tooltip_background</item>
+    </style>
+
+    <!-- Material Components theme customization -->
+    <style name="Theme.SharedParking.MaterialComponents" parent="Theme.MaterialComponents.DayNight">
+        <!-- Customize Material Components theme here -->
+        <item name="materialButtonStyle">@style/Widget.SharedParking.Button</item>
+        <item name="textInputStyle">@style/Widget.SharedParking.TextInputLayout</item>
+        <item name="chipStyle">@style/Widget.SharedParking.Chip</item>
+        <item name="cardViewStyle">@style/Widget.SharedParking.CardView</item>
+    </style>
+
+    <!-- NoActionBar theme variant -->
+    <style name="Theme.SharedParking.NoActionBar" parent="Theme.SharedParking">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <!-- AppCompat theme for compatibility -->
+    <style name="Theme.SharedParking.AppCompat" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/brand_primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/brand_secondary</item>
+        <item name="android:windowBackground">@color/background</item>
+    </style>
+
+    <!-- Theme for settings/preferences -->
+    <style name="Theme.SharedParking.Settings" parent="Theme.AppCompat.Light.DarkActionBar">
+        <item name="colorPrimary">@color/brand_primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/brand_secondary</item>
+        <item name="preferenceTheme">@style/PreferenceTheme.SharedParking</item>
+    </style>
+
+    <!-- Preference theme -->
+    <style name="PreferenceTheme.SharedParking" parent="PreferenceTheme.MaterialComponents">
+        <item name="preferenceCategoryStyle">@style/PreferenceCategory.SharedParking</item>
+        <item name="preferenceStyle">@style/Preference.SharedParking</item>
+        <item name="checkBoxPreferenceStyle">@style/CheckBoxPreference.SharedParking</item>
+        <item name="dialogPreferenceStyle">@style/DialogPreference.SharedParking</item>
+        <item name="seekBarPreferenceStyle">@style/SeekBarPreference.SharedParking</item>
+    </style>
+
+    <!-- Preference styles -->
+    <style name="PreferenceCategory.SharedParking" parent="PreferenceCategory.MaterialComponents">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="Preference.SharedParking" parent="Preference.MaterialComponents">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:summaryTextColor">@color/text_secondary</item>
+        <item name="android:iconSpaceReserved">true</item>
+    </style>
+
+    <!-- Notification theme -->
+    <style name="Theme.SharedParking.Notification" parent="Theme.SharedParking">
+        <item name="android:colorBackground">@color/brand_primary</item>
+        <item name="android:textColorPrimary">@color/white</item>
+        <item name="android:textColorSecondary">@color/white</item>
+    </style>
+</resources>

@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 应用名称 -->
+    <string name="app_name">共享停车位</string>
+    <string name="app_tagline">轻松停车，共享便利</string>
+
+    <!-- 通用字符串 -->
+    <string name="action_ok">确定</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_save">保存</string>
+    <string name="action_delete">删除</string>
+    <string name="action_edit">编辑</string>
+    <string name="action_share">分享</string>
+    <string name="action_search">搜索</string>
+    <string name="action_filter">筛选</string>
+    <string name="action_sort">排序</string>
+    <string name="action_refresh">刷新</string>
+    <string name="action_back">返回</string>
+    <string name="action_next">下一步</string>
+    <string name="action_done">完成</string>
+    <string name="action_skip">跳过</string>
+    <string name="action_retry">重试</string>
+    <string name="action_login">登录</string>
+    <string name="action_logout">退出登录</string>
+    <string name="action_register">注册</string>
+    <string name="action_forgot_password">忘记密码？</string>
+
+    <!-- 提示消息 -->
+    <string name="hint_email">邮箱地址</string>
+    <string name="hint_password">密码</string>
+    <string name="hint_username">用户名</string>
+    <string name="hint_phone">手机号码</string>
+    <string name="hint_confirm_password">确认密码</string>
+    <string name="hint_search_address">输入地址或区域</string>
+    <string name="hint_search_time">选择时间</string>
+    <string name="hint_vehicle_plate">车牌号码</string>
+    <string name="hint_notes">备注</string>
+
+    <!-- 标签 -->
+    <string name="label_email">邮箱</string>
+    <string name="label_password">密码</string>
+    <string name="label_username">用户名</string>
+    <string name="label_phone">手机号</string>
+    <string name="label_real_name">真实姓名</string>
+    <string name="label_avatar">头像</string>
+    <string name="label_gender">性别</string>
+    <string name="label_birth_date">出生日期</string>
+    <string name="label_vehicle_info">车辆信息</string>
+    <string name="label_plate_number">车牌号</string>
+    <string name="label_vehicle_brand">车辆品牌</string>
+    <string name="label_vehicle_model">车辆型号</string>
+    <string name="label_vehicle_color">车辆颜色</string>
+    <string name="label_vehicle_size">车辆尺寸</string>
+    <string name="label_price">价格</string>
+    <string name="label_address">地址</string>
+    <string name="label_distance">距离</string>
+    <string name="label_rating">评分</string>
+    <string name="label_reviews">评价</string>
+    <string name="label_availability">可用性</string>
+    <string name="label_facilities">设施</string>
+    <string name="label_description">描述</string>
+    <string name="label_owner">车位主</string>
+    <string name="label_created_at">创建时间</string>
+    <string name="label_updated_at">更新时间</string>
+    <string name="label_status">状态</string>
+    <string name="label_booking_time">预订时间</string>
+    <string name="label_duration">时长</string>
+    <string name="label_total_price">总价</string>
+    <string name="label_payment_method">支付方式</string>
+    <string name="label_payment_status">支付状态</string>
+    <string name="label_booking_status">预订状态</string>
+
+    <!-- 按钮文本 -->
+    <string name="btn_login">登录</string>
+    <string name="btn_register">注册</string>
+    <string name="btn_send_captcha">发送验证码</string>
+    <string name="btn_verify">验证</string>
+    <string name="btn_search_parking">搜索车位</string>
+    <string name="btn_view_details">查看详情</string>
+    <string name="btn_book_now">立即预订</string>
+    <string name="btn_add_favorite">收藏</string>
+    <string name="btn_remove_favorite">取消收藏</string>
+    <string name="btn_contact_owner">联系车位主</string>
+    <string name="btn_get_directions">导航</string>
+    <string name="btn_check_availability">检查可用性</string>
+    <string name="btn_confirm_booking">确认预订</string>
+    <string name="btn_pay_now">立即支付</string>
+    <string name="btn_cancel_booking">取消预订</string>
+    <string name="btn_add_review">评价</string>
+    <string name="btn_send_message">发送消息</string>
+    <string name="btn_create_spot">发布车位</string>
+    <string name="btn_update_spot">更新车位</string>
+    <string name="btn_delete_spot">删除车位</string>
+    <string name="btn_upload_images">上传图片</string>
+    <string name="btn_select_location">选择位置</string>
+    <string name="btn_use_current_location">使用当前位置</string>
+    <string name="btn_scan_qr">扫码支付</string>
+
+    <!-- 标签页标题 -->
+    <string name="tab_home">首页</string>
+    <string name="tab_search">搜索</string>
+    <string name="tab_bookings">预订</string>
+    <string name="tab_profile">我的</string>
+    <string name="tab_messages">消息</string>
+
+    <!-- 菜单项 -->
+    <string name="menu_home">首页</string>
+    <string name="menu_search">搜索</string>
+    <string name="menu_bookings">我的预订</string>
+    <string name="menu_spots">我的车位</string>
+    <string name="menu_favorites">我的收藏</string>
+    <string name="menu_profile">个人资料</string>
+    <string name="menu_settings">设置</string>
+    <string name="menu_help">帮助</string>
+    <string name="menu_about">关于</string>
+    <string name="menu_logout">退出登录</string>
+
+    <!-- 错误消息 -->
+    <string name="error_network">网络连接失败，请检查网络设置</string>
+    <string name="error_server">服务器错误，请稍后重试</string>
+    <string name="error_timeout">请求超时，请检查网络连接</string>
+    <string name="error_unauthorized">登录已过期，请重新登录</string>
+    <string name="error_forbidden">权限不足，无法执行此操作</string>
+    <string name="error_not_found">请求的资源不存在</string>
+    <string name="error_validation">输入验证失败，请检查输入内容</string>
+    <string name="error_unknown">未知错误，请稍后重试</string>
+    <string name="error_empty_result">未找到相关内容</string>
+    <string name="error_load_failed">加载失败，点击重试</string>
+    <string name="error_login_failed">登录失败，请检查邮箱和密码</string>
+    <string name="error_register_failed">注册失败，请检查输入信息</string>
+    <string name="error_captcha_failed">验证码错误或已过期</string>
+
+    <!-- 成功消息 -->
+    <string name="success_login">登录成功</string>
+    <string name="success_register">注册成功</string>
+    <string name="success_logout">退出登录成功</string>
+    <string name="success_save">保存成功</string>
+    <string name="success_delete">删除成功</string>
+    <string name="success_booking">预订成功</string>
+    <string name="success_payment">支付成功</string>
+    <string name="success_cancel">取消成功</string>
+    <string name="success_review">评价成功</string>
+    <string name="success_message">消息发送成功</string>
+
+    <!-- 状态文本 -->
+    <string name="status_loading">加载中…</string>
+    <string name="status_empty">暂无数据</string>
+    <string name="status_available">可用</string>
+    <string name="status_unavailable">不可用</string>
+    <string name="status_pending">待处理</string>
+    <string name="status_confirmed">已确认</string>
+    <string name="status_in_progress">进行中</string>
+    <string name="status_completed">已完成</string>
+    <string name="status_cancelled">已取消</string>
+    <string name="status_expired">已过期</string>
+    <string name="status_paid">已支付</string>
+    <string name="status_unpaid">未支付</string>
+    <string name="status_refunded">已退款</string>
+
+    <!-- 设施标签 -->
+    <string name="facility_covered">有顶棚</string>
+    <string name="facility_lighting">照明良好</string>
+    <string name="facility_security">安保监控</string>
+    <string name="facility_charging">充电桩</string>
+    <string name="facility_cctv">视频监控</string>
+    <string name="facility_24h">24小时进出</string>
+
+    <!-- 单位 -->
+    <string name="unit_hour">小时</string>
+    <string name="unit_day">天</string>
+    <string name="unit_meter">米</string>
+    <string name="unit_kilometer">公里</string>
+    <string name="unit_yuan">元</string>
+    <string name="unit_per_hour">元/小时</string>
+    <string name="unit_per_day">元/天</string>
+
+    <!-- 对话框标题 -->
+    <string name="dialog_title_confirm">确认操作</string>
+    <string name="dialog_title_warning">警告</string>
+    <string name="dialog_title_error">错误</string>
+    <string name="dialog_title_success">成功</string>
+    <string name="dialog_title_info">提示</string>
+    <string name="dialog_title_delete">删除确认</string>
+    <string name="dialog_title_logout">退出登录</string>
+    <string name="dialog_title_cancel_booking">取消预订</string>
+    <string name="dialog_title_select_payment">选择支付方式</string>
+    <string name="dialog_title_select_time">选择时间</string>
+    <string name="dialog_title_select_date">选择日期</string>
+    <string name="dialog_title_select_image">选择图片</string>
+
+    <!-- 格式化字符串 -->
+    <string name="format_distance">%1$.1f公里</string>
+    <string name="format_price_hour">%1$.2f元/小时</string>
+    <string name="format_price_day">%1$.2f元/天</string>
+    <string name="format_rating">%1$.1f分</string>
+    <string name="format_review_count">%d条评价</string>
+    <string name="format_view_count">%d次查看</string>
+    <string name="format_book_count">%d次预订</string>
+    <string name="format_duration_hours">%1$.1f小时</string>
+    <string name="format_total_price">总价：%1$.2f元</string>
+    <string name="format_time_range">%1$s - %2$s</string>
+    <string name="format_date_time">%1$s %2$s</string>
+
+    <!-- 其他 -->
+    <string name="or">或</string>
+    <string name="all">全部</string>
+    <string name="yes">是</string>
+    <string name="no">否</string>
+    <string name="male">男</string>
+    <string name="female">女</string>
+    <string name="other">其他</string>
+    <string name="unknown">未知</string>
+    <string name="required">必填</string>
+    <string name="optional">选填</string>
+    <string name="loading">加载中…</string>
+    <string name="no_data">暂无数据</string>
+    <string name="no_more">没有更多了</string>
+    <string name="pull_to_refresh">下拉刷新</string>
+    <string name="release_to_refresh">释放刷新</string>
+    <string name="last_update">最后更新：%s</string>
+
+    <!-- 详情页面字符串 -->
+    <string name="price_per_hour">¥%.2f/小时</string>
+    <string name="review_count_template">(%d条评价)</string>
+</resources>
