@@ -1,5 +1,6 @@
 package com.sharedparking.android.ui.parking
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.view.inputmethod.EditorInfo
@@ -69,9 +70,7 @@ class ParkingSearchActivity : AppCompatActivity() {
 
         // 当前位置按钮
         binding.btnCurrentLocation.setOnClickListener {
-            // TODO: 获取当前位置并搜索
-            // 暂时使用默认搜索
-            performSearch()
+            openLocationPicker()
         }
 
         // 高级筛选按钮
@@ -186,13 +185,45 @@ class ParkingSearchActivity : AppCompatActivity() {
      * 显示高级筛选对话框
      */
     private fun showAdvancedFilterDialog() {
-        // TODO: 实现高级筛选对话框
-        // 暂时显示简单提示
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("高级筛选")
-            .setMessage("高级筛选功能开发中...")
-            .setPositiveButton("确定", null)
-            .show()
+        val dialog = AdvancedFilterDialog.newInstance(currentFilters) { filters ->
+            // 应用新的筛选器
+            currentFilters = filters
+            performSearch()
+        }
+        dialog.show(supportFragmentManager, "AdvancedFilterDialog")
+    }
+
+    /**
+     * 打开位置选择器
+     */
+    private fun openLocationPicker() {
+        val intent = Intent(this, LocationPickerActivity::class.java)
+        startActivityForResult(intent, REQUEST_LOCATION_PICKER)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_LOCATION_PICKER && resultCode == RESULT_OK) {
+            data?.let {
+                val latitude = it.getDoubleExtra(LocationPickerActivity.EXTRA_LATITUDE, 0.0)
+                val longitude = it.getDoubleExtra(LocationPickerActivity.EXTRA_LONGITUDE, 0.0)
+                val address = it.getStringExtra(LocationPickerActivity.EXTRA_ADDRESS)
+
+                // 更新搜索过滤器
+                currentFilters = currentFilters.copy(
+                    latitude = latitude,
+                    longitude = longitude
+                )
+
+                // 更新搜索框显示地址
+                address?.let { addr ->
+                    binding.etSearchKeyword.setText(addr)
+                }
+
+                // 执行搜索
+                performSearch()
+            }
+        }
     }
 
     /**
@@ -242,6 +273,8 @@ class ParkingSearchActivity : AppCompatActivity() {
     }
 
     companion object {
+        private const val REQUEST_LOCATION_PICKER = 1001
+
         /**
          * 启动Activity
          */
