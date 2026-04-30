@@ -52,6 +52,11 @@ class HomeFragment : Fragment() {
             startActivity(intent)
         }
 
+        binding.btnMapView.setOnClickListener {
+            val intent = Intent(requireActivity(), com.sharedparking.android.ui.map.MapActivity::class.java)
+            startActivity(intent)
+        }
+
         binding.btnViewBookings.setOnClickListener {
             // 切换到预订Tab
             requireActivity().findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(

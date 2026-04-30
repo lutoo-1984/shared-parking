@@ -51,23 +51,32 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:weightSum="3">
+                        android:weightSum="4">
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnSearchParking"
                             style="@style/Widget.SharedParking.Button"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginEnd="@dimen/spacing_small"
+                            android:layout_marginEnd="4dp"
                             android:layout_weight="1"
                             android:text="搜索车位" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnMapView"
+                            style="@style/Widget.SharedParking.Button.Outlined"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="4dp"
+                            android:layout_weight="1"
+                            android:text="地图" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnViewBookings"
                             style="@style/Widget.SharedParking.Button.Outlined"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginEnd="@dimen/spacing_small"
+                            android:layout_marginEnd="4dp"
                             android:layout_weight="1"
                             android:text="我的预订" />
 
