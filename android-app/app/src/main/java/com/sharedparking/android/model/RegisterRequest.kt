@@ -25,13 +25,3 @@ data class RegisterRequest(
     val verificationCode: String
 )
 
-/**
- * 注册响应
- */
-data class RegisterResponse(
-    @SerializedName("user")
-    val user: User? = null,
-
-    @SerializedName("token")
-    val token: String? = null
-)

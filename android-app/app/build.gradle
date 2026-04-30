@@ -82,6 +82,9 @@ dependencies {
     implementation 'com.github.bumptech.glide:glide:4.16.0'
     implementation 'com.squareup.picasso:picasso:2.71828'
 
+    // CircleImageView
+    implementation 'de.hdodenhof:circleimageview:3.1.0'
+
     // 权限请求
     implementation 'com.guolindev.permissionx:permissionx:1.7.1'
 

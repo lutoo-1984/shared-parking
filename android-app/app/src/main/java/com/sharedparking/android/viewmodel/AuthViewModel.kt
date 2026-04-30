@@ -46,6 +46,27 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
+     * 演示模式登录
+     */
+    fun demoLogin() {
+        viewModelScope.launch {
+            _loginState.value = AuthState.Loading
+            try {
+                val result = authRepository.demoLogin()
+                if (result.isSuccess) {
+                    val user = result.getOrNull()
+                    _currentUser.postValue(user)
+                    _loginState.value = AuthState.Success(user)
+                } else {
+                    _loginState.value = AuthState.Error("演示模式启动失败")
+                }
+            } catch (e: Exception) {
+                _loginState.value = AuthState.Error(e.message ?: "演示模式启动异常")
+            }
+        }
+    }
+
+    /**
      * 用户登录
      */
     fun login(email: String, password: String) {
@@ -69,11 +90,11 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     /**
      * 用户注册
      */
-    fun register(username: String, email: String, phone: String, password: String) {
+    fun register(username: String, email: String, phone: String, password: String, confirmPassword: String, verificationCode: String) {
         viewModelScope.launch {
             _registerState.value = AuthState.Loading
             try {
-                val result = authRepository.register(username, email, phone, password)
+                val result = authRepository.register(username, email, phone, password, confirmPassword, verificationCode)
                 if (result.isSuccess) {
                     _registerState.value = AuthState.Success(result.getOrNull())
                 } else {

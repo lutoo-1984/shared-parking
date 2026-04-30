@@ -65,7 +65,7 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:src="@drawable/ic_favorite_border"
-                app:layout_gravity="end"
+                android:layout_gravity="end"
                 app:tint="@color/white" />
 
             <androidx.appcompat.widget.Toolbar

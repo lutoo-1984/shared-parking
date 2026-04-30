@@ -107,7 +107,7 @@ interface ApiService {
         @Path("id") id: Int,
         @Query("start_time") startTime: String,
         @Query("end_time") endTime: String
-    ): Response<ApiResponse<Map<String, Any>>>
+    ): Response<ApiResponse<AvailabilityResponse>>
 
     // ===== 收藏相关接口 =====
 
@@ -138,13 +138,13 @@ interface ApiService {
      * 创建预订
      */
     @POST("bookings")
-    suspend fun createBooking(@Body request: Map<String, Any>): Response<ApiResponse<Any>>
+    suspend fun createBooking(@Body request: BookingRequest): Response<ApiResponse<Booking>>
 
     /**
      * 获取预订详情
      */
     @GET("bookings/{id}")
-    suspend fun getBooking(@Path("id") id: Int): Response<ApiResponse<Any>>
+    suspend fun getBooking(@Path("id") id: Int): Response<ApiResponse<Booking>>
 
     /**
      * 获取我的预订
@@ -153,13 +153,51 @@ interface ApiService {
     suspend fun getMyBookings(
         @Query("page") page: Int = 1,
         @Query("limit") limit: Int = 20
-    ): Response<ApiResponse<Any>>
+    ): Response<ApiResponse<BookingListResponse>>
 
     /**
      * 取消预订
      */
     @PUT("bookings/{id}/cancel")
     suspend fun cancelBooking(@Path("id") id: Int): Response<ApiResponse<Any>>
+
+    // ===== 支付相关接口 =====
+
+    /**
+     * 创建支付
+     */
+    @POST("payments/create")
+    suspend fun createPayment(@Body request: PaymentRequest): Response<ApiResponse<Payment>>
+
+    /**
+     * 获取支付详情
+     */
+    @GET("payments/{id}")
+    suspend fun getPayment(@Path("id") id: Int): Response<ApiResponse<Payment>>
+
+    /**
+     * 获取预订的支付记录
+     */
+    @GET("payments/booking/{booking_id}")
+    suspend fun getBookingPayment(@Path("booking_id") bookingId: Int): Response<ApiResponse<Payment>>
+
+    /**
+     * 获取我的支付记录
+     */
+    @GET("payments")
+    suspend fun getMyPayments(
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 20
+    ): Response<ApiResponse<PaymentListResponse>>
+
+    /**
+     * 退款申请
+     */
+    @POST("payments/{id}/refund")
+    suspend fun requestRefund(
+        @Path("id") id: Int,
+        @Body request: RefundRequest
+    ): Response<ApiResponse<Payment>>
 }
 
 /**

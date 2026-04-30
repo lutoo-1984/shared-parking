@@ -3,7 +3,7 @@
 // 各个模块的 build.gradle 文件
 buildscript {
     ext {
-        kotlin_version = '1.8.22'
+        kotlin_version = '1.9.0'
         compose_version = '1.5.0'
     }
     repositories {
@@ -11,17 +11,18 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.1.4'
+        classpath 'com.android.tools.build:gradle:8.2.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
+// 注释掉重复的仓库配置，因为已经在settings.gradle中配置了
+// allprojects {
+//     repositories {
+//         google()
+//         mavenCentral()
+//     }
+// }
 
 task clean(type: Delete) {
     delete rootProject.buildDir

@@ -4,6 +4,8 @@ import com.sharedparking.android.model.*
 import com.sharedparking.android.network.ApiClientBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.net.ConnectException
+import java.net.UnknownHostException
 
 /**
  * 停车位仓库类
@@ -60,7 +62,13 @@ class ParkingRepository {
                     Result.failure(Exception("网络请求失败: ${response.code()}"))
                 }
             } catch (e: Exception) {
-                Result.failure(e)
+                if (DemoMode.isEnabled && e.isNetworkError()) {
+                    Result.success(
+                        ParkingSearchResponse(DemoMode.demoSpots, DemoMode.demoPagination)
+                    )
+                } else {
+                    Result.failure(e)
+                }
             }
         }
     }
@@ -85,7 +93,12 @@ class ParkingRepository {
                     Result.failure(Exception("网络请求失败: ${response.code()}"))
                 }
             } catch (e: Exception) {
-                Result.failure(e)
+                if (DemoMode.isEnabled && e.isNetworkError()) {
+                    val spot = DemoMode.demoSpots.find { it.id == id } ?: DemoMode.demoSpots.first()
+                    Result.success(spot)
+                } else {
+                    Result.failure(e)
+                }
             }
         }
     }
@@ -185,7 +198,11 @@ class ParkingRepository {
                     Result.failure(Exception("网络请求失败: ${response.code()}"))
                 }
             } catch (e: Exception) {
-                Result.failure(e)
+                if (DemoMode.isEnabled && e.isNetworkError()) {
+                    Result.success(ParkingSearchResponse(DemoMode.demoSpots, DemoMode.demoPagination))
+                } else {
+                    Result.failure(e)
+                }
             }
         }
     }
@@ -205,8 +222,8 @@ class ParkingRepository {
                 if (response.isSuccessful) {
                     val body = response.body()
                     if (body?.success == true && body.data != null) {
-                        val isAvailable = body.data["is_available"] as? Boolean
-                        Result.success(isAvailable ?: false)
+                        val availabilityResponse = body.data as AvailabilityResponse
+                        Result.success(availabilityResponse.available)
                     } else {
                         val error = body?.error ?: throw Exception("检查可用性失败")
                         Result.failure(Exception(error.message))
@@ -215,7 +232,11 @@ class ParkingRepository {
                     Result.failure(Exception("网络请求失败: ${response.code()}"))
                 }
             } catch (e: Exception) {
-                Result.failure(e)
+                if (DemoMode.isEnabled && e.isNetworkError()) {
+                    Result.success(true)
+                } else {
+                    Result.failure(e)
+                }
             }
         }
     }
@@ -265,7 +286,11 @@ class ParkingRepository {
                     Result.failure(Exception("网络请求失败: ${response.code()}"))
                 }
             } catch (e: Exception) {
-                Result.failure(e)
+                if (DemoMode.isEnabled && e.isNetworkError()) {
+                    Result.success(true)
+                } else {
+                    Result.failure(e)
+                }
             }
         }
     }
@@ -290,95 +315,21 @@ class ParkingRepository {
                     Result.failure(Exception("网络请求失败: ${response.code()}"))
                 }
             } catch (e: Exception) {
-                Result.failure(e)
-            }
-        }
-    }
-
-    /**
-     * 创建预订
-     */
-    suspend fun createBooking(
-        spotId: Int,
-        vehiclePlateNumber: String? = null,
-        startTime: String,
-        endTime: String
-    ): Result<Boolean> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val request = mutableMapOf<String, Any>(
-                    "spot_id" to spotId,
-                    "start_time" to startTime,
-                    "end_time" to endTime
-                )
-                vehiclePlateNumber?.let { request["vehicle_plate_number"] = it }
-
-                val response = apiService.createBooking(request)
-
-                if (response.isSuccessful) {
-                    val body = response.body()
-                    if (body?.success == true) {
-                        Result.success(true)
-                    } else {
-                        val error = body?.error ?: throw Exception("创建预订失败")
-                        Result.failure(Exception(error.message))
-                    }
+                if (DemoMode.isEnabled && e.isNetworkError()) {
+                    Result.success(ParkingSearchResponse(DemoMode.demoSpots, DemoMode.demoPagination))
                 } else {
-                    Result.failure(Exception("网络请求失败: ${response.code()}"))
+                    Result.failure(e)
                 }
-            } catch (e: Exception) {
-                Result.failure(e)
             }
         }
     }
 
-    /**
-     * 获取我的预订
-     */
-    suspend fun getMyBookings(page: Int = 1, limit: Int = 20): Result<Any> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val response = apiService.getMyBookings(page, limit)
+}
 
-                if (response.isSuccessful) {
-                    val body = response.body()
-                    if (body?.success == true) {
-                        Result.success(body.data ?: true)
-                    } else {
-                        val error = body?.error ?: throw Exception("获取预订列表失败")
-                        Result.failure(Exception(error.message))
-                    }
-                } else {
-                    Result.failure(Exception("网络请求失败: ${response.code()}"))
-                }
-            } catch (e: Exception) {
-                Result.failure(e)
-            }
-        }
-    }
-
-    /**
-     * 取消预订
-     */
-    suspend fun cancelBooking(bookingId: Int): Result<Boolean> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val response = apiService.cancelBooking(bookingId)
-
-                if (response.isSuccessful) {
-                    val body = response.body()
-                    if (body?.success == true) {
-                        Result.success(true)
-                    } else {
-                        val error = body?.error ?: throw Exception("取消预订失败")
-                        Result.failure(Exception(error.message))
-                    }
-                } else {
-                    Result.failure(Exception("网络请求失败: ${response.code()}"))
-                }
-            } catch (e: Exception) {
-                Result.failure(e)
-            }
-        }
-    }
+private fun Exception.isNetworkError(): Boolean {
+    return this is java.net.ConnectException ||
+            this is java.net.UnknownHostException ||
+            this is java.net.SocketException ||
+            this is java.net.SocketTimeoutException ||
+            this is javax.net.ssl.SSLException
 }

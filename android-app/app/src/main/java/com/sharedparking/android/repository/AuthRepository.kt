@@ -2,8 +2,12 @@ package com.sharedparking.android.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.sharedparking.android.model.ApiResponse
+import com.sharedparking.android.model.DemoMode
 import com.sharedparking.android.model.LoginRequest
+import com.sharedparking.android.model.LoginResponse
 import com.sharedparking.android.model.RegisterRequest
+import com.sharedparking.android.model.RegisterResponse
 import com.sharedparking.android.model.User
 import com.sharedparking.android.network.ApiClient
 import com.sharedparking.android.network.ApiClientBuilder
@@ -35,6 +39,18 @@ class AuthRepository(private val context: Context) {
     // ===== 公开方法 =====
 
     /**
+     * 演示模式登录（不依赖服务端）
+     */
+    suspend fun demoLogin(): Result<User> {
+        return withContext(Dispatchers.IO) {
+            DemoMode.isEnabled = true
+            val user = DemoMode.demoUser
+            saveAuthData("demo_token_demo_mode", user)
+            Result.success(user)
+        }
+    }
+
+    /**
      * 用户登录
      */
     suspend fun login(email: String, password: String): Result<User> {
@@ -45,19 +61,22 @@ class AuthRepository(private val context: Context) {
 
                 if (response.isSuccessful) {
                     val body = response.body()
-                    if (body?.success == true && body.data != null) {
+                    if (body != null && body.token.isNotEmpty() && body.user.id > 0) {
                         // 保存token和用户信息
-                        saveAuthData(body.data.token, body.data.user)
-                        Result.success(body.data.user)
+                        saveAuthData(body.token, body.user)
+                        Result.success(body.user)
                     } else {
-                        val error = body?.error ?: throw Exception("登录失败")
-                        Result.failure(Exception(error.message))
+                        Result.failure(Exception("登录失败: 响应数据无效"))
                     }
                 } else {
                     Result.failure(Exception("网络请求失败: ${response.code()}"))
                 }
             } catch (e: Exception) {
-                Result.failure(e)
+                if (DemoMode.isEnabled) {
+                    Result.success(DemoMode.demoUser)
+                } else {
+                    Result.failure(e)
+                }
             }
         }
     }
@@ -69,7 +88,9 @@ class AuthRepository(private val context: Context) {
         username: String,
         email: String,
         phone: String,
-        password: String
+        password: String,
+        confirmPassword: String,
+        verificationCode: String
     ): Result<User> {
         return withContext(Dispatchers.IO) {
             try {
@@ -77,31 +98,29 @@ class AuthRepository(private val context: Context) {
                     username = username,
                     email = email,
                     phone = phone,
-                    password = password
+                    password = password,
+                    confirmPassword = confirmPassword,
+                    verificationCode = verificationCode
                 )
                 val response = apiService.register(request)
 
                 if (response.isSuccessful) {
                     val body = response.body()
-                    if (body?.success == true && body.data != null) {
+                    if (body != null && body.user.id > 0) {
                         // 注册成功，返回用户信息（但未登录）
-                        val user = User(
-                            id = body.data.id,
-                            username = body.data.username,
-                            email = body.data.email,
-                            phone = body.data.phone,
-                            isVerified = body.data.isVerified
-                        )
-                        Result.success(user)
+                        Result.success(body.user)
                     } else {
-                        val error = body?.error ?: throw Exception("注册失败")
-                        Result.failure(Exception(error.message))
+                        Result.failure(Exception("注册失败: 响应数据无效"))
                     }
                 } else {
                     Result.failure(Exception("网络请求失败: ${response.code()}"))
                 }
             } catch (e: Exception) {
-                Result.failure(e)
+                if (DemoMode.isEnabled) {
+                    Result.success(DemoMode.demoUser)
+                } else {
+                    Result.failure(e)
+                }
             }
         }
     }
@@ -130,7 +149,11 @@ class AuthRepository(private val context: Context) {
                     Result.failure(Exception("网络请求失败: ${response.code()}"))
                 }
             } catch (e: Exception) {
-                Result.failure(e)
+                if (DemoMode.isEnabled) {
+                    Result.success(true)
+                } else {
+                    Result.failure(e)
+                }
             }
         }
     }
@@ -164,7 +187,11 @@ class AuthRepository(private val context: Context) {
                     Result.failure(Exception("网络请求失败: ${response.code()}"))
                 }
             } catch (e: Exception) {
-                Result.failure(e)
+                if (DemoMode.isEnabled) {
+                    Result.success(true)
+                } else {
+                    Result.failure(e)
+                }
             }
         }
     }
@@ -196,7 +223,11 @@ class AuthRepository(private val context: Context) {
                     Result.failure(Exception("网络请求失败: ${response.code()}"))
                 }
             } catch (e: Exception) {
-                Result.failure(e)
+                if (DemoMode.isEnabled) {
+                    Result.success(DemoMode.demoUser)
+                } else {
+                    Result.failure(e)
+                }
             }
         }
     }
@@ -221,7 +252,11 @@ class AuthRepository(private val context: Context) {
                     Result.failure(Exception("网络请求失败: ${response.code()}"))
                 }
             } catch (e: Exception) {
-                Result.failure(e)
+                if (DemoMode.isEnabled) {
+                    Result.success(true)
+                } else {
+                    Result.failure(e)
+                }
             }
         }
     }
@@ -258,6 +293,7 @@ class AuthRepository(private val context: Context) {
      * 退出登录
      */
     fun logout() {
+        DemoMode.reset()
         clearAuthData()
     }
 

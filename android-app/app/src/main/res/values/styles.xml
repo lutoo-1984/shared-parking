@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Theme.SharedParking" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.SharedParking" parent="Theme.AppCompat.Light.NoActionBar">
         <!-- Primary brand color. -->
         <item name="colorPrimary">@color/brand_primary</item>
         <item name="colorPrimaryVariant">@color/primary_dark</item>
@@ -11,16 +11,12 @@
         <item name="colorSecondaryVariant">@color/accent_dark</item>
         <item name="colorOnSecondary">@color/white</item>
         <!-- Status bar color. -->
-        <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
+        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
         <!-- Customize your theme here. -->
         <item name="android:windowBackground">@color/background</item>
         <item name="android:textColorPrimary">@color/text_primary</item>
         <item name="android:textColorSecondary">@color/text_secondary</item>
         <item name="android:textColorHint">@color/text_hint</item>
-        <!-- Material Components -->
-        <item name="materialButtonStyle">@style/Widget.SharedParking.Button</item>
-        <item name="textInputStyle">@style/Widget.SharedParking.TextInputLayout</item>
-        <item name="cardViewStyle">@style/Widget.SharedParking.CardView</item>
     </style>
 
     <!-- Splash screen theme -->
@@ -32,8 +28,8 @@
     </style>
 
     <!-- Button styles -->
-    <style name="Widget.SharedParking.Button" parent="Widget.MaterialComponents.Button">
-        <item name="backgroundTint">@color/button_primary</item>
+    <style name="Widget.SharedParking.Button" parent="Widget.AppCompat.Button">
+        <item name="backgroundTint">@color/brand_primary</item>
         <item name="android:textColor">@color/white</item>
         <item name="cornerRadius">8dp</item>
         <item name="android:padding">12dp</item>
@@ -41,147 +37,125 @@
         <item name="android:textStyle">bold</item>
     </style>
 
-    <style name="Widget.SharedParking.Button.Outlined" parent="Widget.MaterialComponents.Button.OutlinedButton">
-        <item name="strokeColor">@color/button_outline_border</item>
-        <item name="strokeWidth">1dp</item>
-        <item name="android:textColor">@color/button_outline_text</item>
-        <item name="cornerRadius">8dp</item>
-        <item name="android:padding">12dp</item>
-        <item name="android:textSize">16sp</item>
-    </style>
-
-    <style name="Widget.SharedParking.Button.Text" parent="Widget.MaterialComponents.Button.TextButton">
-        <item name="android:textColor">@color/brand_primary</item>
-        <item name="android:padding">8dp</item>
-        <item name="android:textSize">14sp</item>
-    </style>
-
-    <!-- TextInputLayout styles -->
-    <style name="Widget.SharedParking.TextInputLayout" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-        <item name="boxStrokeColor">@color/input_border</item>
-        <item name="boxStrokeWidth">1dp</item>
-        <item name="boxCornerRadiusTopStart">8dp</item>
-        <item name="boxCornerRadiusTopEnd">8dp</item>
-        <item name="boxCornerRadiusBottomStart">8dp</item>
-        <item name="boxCornerRadiusBottomEnd">8dp</item>
-        <item name="hintTextColor">@color/input_hint</item>
-        <item name="android:textColorHint">@color/input_hint</item>
-        <item name="boxBackgroundColor">@color/input_background</item>
-        <item name="android:textColor">@color/input_text</item>
-    </style>
-
     <!-- CardView styles -->
     <style name="Widget.SharedParking.CardView" parent="CardView">
-        <item name="cardBackgroundColor">@color/card_background</item>
+        <item name="cardBackgroundColor">@color/white</item>
         <item name="cardCornerRadius">12dp</item>
         <item name="cardElevation">4dp</item>
         <item name="cardUseCompatPadding">true</item>
         <item name="cardPreventCornerOverlap">false</item>
     </style>
 
-    <!-- Toolbar styles -->
-    <style name="Widget.SharedParking.Toolbar" parent="Widget.MaterialComponents.Toolbar">
-        <item name="titleTextColor">@color/text_primary</item>
-        <item name="subtitleTextColor">@color/text_secondary</item>
-        <item name="android:background">?attr/colorPrimary</item>
-        <item name="popupTheme">@style/ThemeOverlay.AppCompat.Light</item>
-    </style>
-
-    <!-- Bottom Navigation styles -->
-    <style name="Widget.SharedParking.BottomNavigationView" parent="Widget.MaterialComponents.BottomNavigationView">
-        <item name="itemIconTint">@drawable/bottom_nav_icon_tint</item>
-        <item name="itemTextColor">@drawable/bottom_nav_text_tint</item>
-        <item name="itemBackground">@color/bottom_nav_background</item>
-        <item name="android:elevation">8dp</item>
-        <item name="labelVisibilityMode">labeled</item>
-    </style>
-
-    <!-- ProgressBar styles -->
-    <style name="Widget.SharedParking.ProgressBar" parent="Widget.AppCompat.ProgressBar">
-        <item name="android:indeterminateTint">@color/brand_primary</item>
-        <item name="android:minWidth">48dp</item>
-        <item name="android:minHeight">48dp</item>
-    </style>
-
-    <!-- Dialog styles -->
-    <style name="Theme.SharedParking.Dialog" parent="Theme.MaterialComponents.Dialog">
-        <item name="android:windowBackground">@color/dialog_background</item>
-        <item name="android:windowMinWidthMajor">85%</item>
-        <item name="android:windowMinWidthMinor">85%</item>
-    </style>
-
-    <!-- TabLayout styles -->
-    <style name="Widget.SharedParking.TabLayout" parent="Widget.MaterialComponents.TabLayout">
-        <item name="tabIndicatorColor">@color/brand_primary</item>
-        <item name="tabSelectedTextColor">@color/brand_primary</item>
-        <item name="tabTextColor">@color/text_secondary</item>
-        <item name="tabRippleColor">@color/transparent</item>
-    </style>
-
-    <!-- Chip styles -->
-    <style name="Widget.SharedParking.Chip" parent="Widget.MaterialComponents.Chip.Choice">
-        <item name="chipBackgroundColor">@color/tag_background</item>
-        <item name="chipStrokeColor">@color/transparent</item>
-        <item name="chipStrokeWidth">0dp</item>
-        <item name="chipCornerRadius">16dp</item>
-        <item name="android:textColor">@color/tag_text</item>
-    </style>
-
-    <!-- AppBarLayout styles -->
-    <style name="Widget.SharedParking.AppBarLayout" parent="Widget.MaterialComponents.AppBarLayout">
-        <item name="android:background">?attr/colorPrimary</item>
-        <item name="android:elevation">4dp</item>
-    </style>
-
     <!-- Text styles -->
-    <style name="Text.Title.Large" parent="TextAppearance.MaterialComponents.Headline5">
+    <style name="Text.Title.Large">
         <item name="android:textSize">24sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/text_primary</item>
     </style>
 
-    <style name="Text.Title.Medium" parent="TextAppearance.MaterialComponents.Headline6">
+    <style name="Text.Title.Medium">
         <item name="android:textSize">20sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/text_primary</item>
     </style>
 
-    <style name="Text.Title.Small" parent="TextAppearance.MaterialComponents.Subtitle1">
+    <style name="Text.Title.Small">
         <item name="android:textSize">16sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/text_primary</item>
     </style>
 
-    <style name="Text.Body.Large" parent="TextAppearance.MaterialComponents.Body1">
+    <style name="Text.Body.Large">
         <item name="android:textSize">16sp</item>
         <item name="android:textColor">@color/text_primary</item>
     </style>
 
-    <style name="Text.Body.Medium" parent="TextAppearance.MaterialComponents.Body2">
+    <style name="Text.Body.Medium">
         <item name="android:textSize">14sp</item>
         <item name="android:textColor">@color/text_secondary</item>
     </style>
 
-    <style name="Text.Body.Small" parent="TextAppearance.MaterialComponents.Caption">
+    <style name="Text.Body.Small">
         <item name="android:textSize">12sp</item>
         <item name="android:textColor">@color/text_hint</item>
     </style>
 
-    <style name="Text.Link" parent="TextAppearance.MaterialComponents.Body2">
-        <item name="android:textColor">@color/text_link</item>
+    <!-- Button outlined style -->
+    <style name="Widget.SharedParking.Button.Outlined" parent="Widget.AppCompat.Button">
+        <item name="android:background">@drawable/btn_outline</item>
+        <item name="android:textColor">@color/brand_primary</item>
+        <item name="android:padding">12dp</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <!-- TextInputLayout style -->
+    <style name="Widget.SharedParking.TextInputLayout" parent="Widget.AppCompat.EditText">
+        <item name="android:background">@drawable/edittext_background</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textColorHint">@color/text_hint</item>
+        <item name="android:padding">12dp</item>
+    </style>
+
+    <!-- 兼容性样式 - 为旧布局文件添加 -->
+    <style name="Text.Body" parent="Text.Body.Medium" />
+    <style name="Text.Title" parent="Text.Title.Medium" />
+    <style name="Text" parent="Text.Body.Medium" />
+
+    <!-- 缺失的样式 -->
+    <style name="Widget.SharedParking.ProgressBar" parent="Widget.AppCompat.ProgressBar">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:indeterminateTint">@color/brand_primary</item>
+    </style>
+
+    <style name="Text.Link">
         <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/text_link</item>
         <item name="android:textStyle">normal</item>
     </style>
 
-    <!-- Error text style -->
-    <style name="Text.Error" parent="TextAppearance.MaterialComponents.Caption">
-        <item name="android:textColor">@color/brand_error</item>
+    <style name="Widget.SharedParking.Chip.Filter" parent="Widget.AppCompat.Button">
+        <item name="android:background">@drawable/rounded_corner_outline</item>
+        <item name="android:textColor">@color/tag_text</item>
+        <item name="android:padding">8dp</item>
         <item name="android:textSize">12sp</item>
+        <item name="android:minHeight">32dp</item>
     </style>
 
-    <!-- Success text style -->
-    <style name="Text.Success" parent="TextAppearance.MaterialComponents.Caption">
-        <item name="android:textColor">@color/brand_success</item>
-        <item name="android:textSize">12sp</item>
+    <style name="Widget.SharedParking.TextInputLayout.Search" parent="Widget.SharedParking.TextInputLayout">
+        <item name="android:hint">@string/hint_search_address_or_keyword</item>
+        <item name="android:drawableStart">@drawable/ic_search</item>
+        <item name="android:drawablePadding">8dp</item>
+    </style>
+
+    <style name="Text.Body.Small.Strikethrough" parent="Text.Body.Small">
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <!-- 更多缺失的样式 -->
+    <style name="Widget.SharedParking.TabLayout" parent="Widget.Design.TabLayout">
+        <item name="tabIndicatorColor">@color/brand_primary</item>
+        <item name="tabSelectedTextColor">@color/brand_primary</item>
+        <item name="tabTextColor">@color/text_secondary</item>
+        <item name="tabIndicatorHeight">3dp</item>
+    </style>
+
+    <style name="Widget.SharedParking.Chip.Status" parent="Widget.AppCompat.Button">
+        <item name="android:background">@drawable/rounded_corner</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:padding">4dp</item>
+        <item name="android:textSize">10sp</item>
+        <item name="android:minHeight">20dp</item>
+    </style>
+
+    <style name="Text.Caption" parent="Text.Body.Small">
+        <item name="android:textSize">10sp</item>
+        <item name="android:textColor">@color/text_hint</item>
+    </style>
+
+    <style name="Theme.SharedParking.Dialog" parent="Theme.AppCompat.Light.Dialog">
+        <item name="colorPrimary">@color/brand_primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/accent</item>
     </style>
 </resources>

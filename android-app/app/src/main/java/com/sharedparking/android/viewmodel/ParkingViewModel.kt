@@ -132,7 +132,12 @@ class ParkingViewModel(application: Application) : AndroidViewModel(application)
             try {
                 val result = parkingRepository.getParkingSpot(id)
                 if (result.isSuccess) {
-                    _spotDetailState.value = ParkingDetailState.Success(result.getOrNull())
+                    val spot = result.getOrNull()
+                    if (spot != null) {
+                        _spotDetailState.value = ParkingDetailState.Success(spot)
+                    } else {
+                        _spotDetailState.value = ParkingDetailState.Error("获取的停车位数据为空")
+                    }
                 } else {
                     _spotDetailState.value = ParkingDetailState.Error(result.exceptionOrNull()?.message ?: "获取详情失败")
                 }
@@ -171,7 +176,12 @@ class ParkingViewModel(application: Application) : AndroidViewModel(application)
             try {
                 val result = parkingRepository.createParkingSpot(request)
                 if (result.isSuccess) {
-                    _createSpotState.value = CreateSpotState.Success(result.getOrNull())
+                    val spot = result.getOrNull()
+                    if (spot != null) {
+                        _createSpotState.value = CreateSpotState.Success(spot)
+                    } else {
+                        _createSpotState.value = CreateSpotState.Error("创建的停车位数据为空")
+                    }
                 } else {
                     _createSpotState.value = CreateSpotState.Error(result.exceptionOrNull()?.message ?: "创建失败")
                 }
@@ -190,7 +200,12 @@ class ParkingViewModel(application: Application) : AndroidViewModel(application)
             try {
                 val result = parkingRepository.updateParkingSpot(id, request)
                 if (result.isSuccess) {
-                    _updateSpotState.value = CreateSpotState.Success(result.getOrNull())
+                    val spot = result.getOrNull()
+                    if (spot != null) {
+                        _updateSpotState.value = CreateSpotState.Success(spot)
+                    } else {
+                        _updateSpotState.value = CreateSpotState.Error("更新的停车位数据为空")
+                    }
                 } else {
                     _updateSpotState.value = CreateSpotState.Error(result.exceptionOrNull()?.message ?: "更新失败")
                 }
@@ -228,7 +243,12 @@ class ParkingViewModel(application: Application) : AndroidViewModel(application)
             try {
                 val result = parkingRepository.checkAvailability(spotId, startTime, endTime)
                 if (result.isSuccess) {
-                    _availabilityState.value = AvailabilityState.Success(result.getOrNull())
+                    val isAvailable = result.getOrNull()
+                    if (isAvailable != null) {
+                        _availabilityState.value = AvailabilityState.Success(isAvailable)
+                    } else {
+                        _availabilityState.value = AvailabilityState.Error("可用性检查结果为空")
+                    }
                 } else {
                     _availabilityState.value = AvailabilityState.Error(result.exceptionOrNull()?.message ?: "检查可用性失败")
                 }

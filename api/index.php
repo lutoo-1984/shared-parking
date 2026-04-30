@@ -518,21 +518,30 @@ function handleParking($method, $pathSegments, $data) {
                     // 检查车位可用性
                     if (!empty($id)) {
                         try {
-                            $startTime = $data['start_time'] ?? '';
-                            $endTime = $data['end_time'] ?? '';
+                            $startTime = $data['start_time'] ?? $_GET['start_time'] ?? '';
+                            $endTime = $data['end_time'] ?? $_GET['end_time'] ?? '';
 
                             if (empty($startTime) || empty($endTime)) {
                                 throw new Exception('开始时间和结束时间不能为空', HTTP_BAD_REQUEST);
                             }
 
                             $isAvailable = Parking::checkAvailability($id, $startTime, $endTime);
+
+                            // 获取冲突的预订信息
+                            $conflictingBookings = [];
+                            if (!$isAvailable) {
+                                $conflictingBookings = Parking::getSpotBookings($id, $startTime, $endTime);
+                            }
+
                             return [
                                 'success' => true,
                                 'data' => [
-                                    'is_available' => $isAvailable,
+                                    'available' => $isAvailable,
                                     'spot_id' => $id,
                                     'start_time' => $startTime,
-                                    'end_time' => $endTime
+                                    'end_time' => $endTime,
+                                    'conflicting_bookings' => $conflictingBookings,
+                                    'message' => $isAvailable ? '车位可用' : '车位不可用，时间冲突'
                                 ]
                             ];
                         } catch (Exception $e) {
@@ -656,6 +665,14 @@ function handleParking($method, $pathSegments, $data) {
 /**
  * 处理预订相关请求
  */
+/**
+ * 获取当前用户ID
+ */
+function getCurrentUserId() {
+    $user = Auth::getCurrentUser();
+    return $user ? intval($user['id']) : null;
+}
+
 function handleBookings($method, $pathSegments, $data) {
     $action = $pathSegments[1] ?? '';
     $id = $pathSegments[2] ?? '';
@@ -663,23 +680,368 @@ function handleBookings($method, $pathSegments, $data) {
     switch ($method) {
         case 'GET':
             if (!empty($id)) {
-                return ['success' => true, 'message' => '获取预订详情功能待实现', 'booking_id' => $id];
+                return getBookingDetail($id);
             } else {
-                return ['success' => true, 'message' => '获取预订列表功能待实现'];
+                return getMyBookings();
             }
         case 'POST':
             if (empty($action)) {
-                return ['success' => true, 'message' => '创建预订功能待实现', 'data' => $data];
+                return createBooking($data);
             }
             throw new Exception('操作不存在', 404);
         case 'PUT':
             if (!empty($id) && $action === 'cancel') {
-                return ['success' => true, 'message' => '取消预订功能待实现', 'booking_id' => $id];
+                return cancelBooking($id, $data);
             }
             throw new Exception('操作不存在', 404);
         default:
             throw new Exception('方法不允许', 405);
     }
+}
+
+/**
+ * 创建预订
+ */
+function createBooking($data) {
+    try {
+        // 验证用户是否登录
+        $userId = getCurrentUserId();
+        if (!$userId) {
+            return ['success' => false, 'error' => ['code' => 401, 'message' => '请先登录']];
+        }
+
+        // 验证必填字段
+        $requiredFields = ['spot_id', 'vehicle_plate_number', 'vehicle_brand', 'vehicle_model', 'start_time', 'end_time'];
+        foreach ($requiredFields as $field) {
+            if (empty($data[$field])) {
+                return ['success' => false, 'error' => ['code' => 400, 'message' => "缺少必填字段: $field"]];
+            }
+        }
+
+        $spotId = intval($data['spot_id']);
+        $vehiclePlateNumber = trim($data['vehicle_plate_number']);
+        $vehicleBrand = trim($data['vehicle_brand']);
+        $vehicleModel = trim($data['vehicle_model']);
+        $vehicleColor = isset($data['vehicle_color']) ? trim($data['vehicle_color']) : null;
+        $startTime = $data['start_time'];
+        $endTime = $data['end_time'];
+        $notes = isset($data['notes']) ? trim($data['notes']) : null;
+
+        // 验证停车位是否存在且可用
+        $spot = db()->querySingle("SELECT * FROM parking_spots WHERE id = ? AND status = 'active'", $spotId);
+        if (!$spot) {
+            return ['success' => false, 'error' => ['code' => 404, 'message' => '停车位不存在或不可用']];
+        }
+
+        // 验证时间格式
+        $startDateTime = DateTime::createFromFormat('Y-m-d\TH:i:s\Z', $startTime);
+        $endDateTime = DateTime::createFromFormat('Y-m-d\TH:i:s\Z', $endTime);
+
+        if (!$startDateTime || !$endDateTime) {
+            return ['success' => false, 'error' => ['code' => 400, 'message' => '时间格式不正确，请使用ISO格式']];
+        }
+
+        // 验证时间范围
+        $now = new DateTime();
+        if ($startDateTime < $now) {
+            return ['success' => false, 'error' => ['code' => 400, 'message' => '开始时间不能早于当前时间']];
+        }
+
+        if ($endDateTime <= $startDateTime) {
+            return ['success' => false, 'error' => ['code' => 400, 'message' => '结束时间必须晚于开始时间']];
+        }
+
+        // 计算时长（小时）
+        $interval = $startDateTime->diff($endDateTime);
+        $durationHours = $interval->h + ($interval->i / 60) + ($interval->days * 24);
+
+        if ($durationHours < 1) {
+            return ['success' => false, 'error' => ['code' => 400, 'message' => '预订时长至少1小时']];
+        }
+
+        if ($durationHours > 30 * 24) {
+            return ['success' => false, 'error' => ['code' => 400, 'message' => '预订时长不能超过30天']];
+        }
+
+        // 检查时间冲突
+        $conflictingBookings = db()->queryAll(
+            "SELECT id FROM bookings
+             WHERE spot_id = ?
+             AND status IN ('pending', 'confirmed', 'in_progress')
+             AND (
+                 (start_time < ? AND end_time > ?) OR
+                 (start_time >= ? AND start_time < ?) OR
+                 (end_time > ? AND end_time <= ?)
+             )",
+            $spotId,
+            $endDateTime->format('Y-m-d H:i:s'),
+            $startDateTime->format('Y-m-d H:i:s'),
+            $startDateTime->format('Y-m-d H:i:s'),
+            $endDateTime->format('Y-m-d H:i:s'),
+            $startDateTime->format('Y-m-d H:i:s'),
+            $endDateTime->format('Y-m-d H:i:s')
+        );
+
+        if (!empty($conflictingBookings)) {
+            return ['success' => false, 'error' => ['code' => 409, 'message' => '该时间段车位已被预订']];
+        }
+
+        // 计算价格
+        $pricePerHour = floatval($spot['price_per_hour']);
+        $totalPrice = round($durationHours * $pricePerHour, 2);
+
+        // 生成入场验证码
+        $checkInCode = generateCheckInCode();
+
+        // 开始事务
+        db()->beginTransaction();
+
+        try {
+            // 创建预订记录
+            $bookingId = db()->insert('bookings', [
+                'user_id' => $userId,
+                'spot_id' => $spotId,
+                'vehicle_plate_number' => $vehiclePlateNumber,
+                'vehicle_brand' => $vehicleBrand,
+                'vehicle_model' => $vehicleModel,
+                'vehicle_color' => $vehicleColor,
+                'start_time' => $startDateTime->format('Y-m-d H:i:s'),
+                'end_time' => $endDateTime->format('Y-m-d H:i:s'),
+                'duration_hours' => $durationHours,
+                'total_price' => $totalPrice,
+                'status' => 'pending',
+                'check_in_code' => $checkInCode,
+                'notes' => $notes,
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
+
+            // 获取创建的预订详情
+            $booking = db()->querySingle(
+                "SELECT b.*,
+                        ps.title as spot_title,
+                        ps.address as spot_address,
+                        ps.price_per_hour,
+                        u.username as owner_username
+                 FROM bookings b
+                 JOIN parking_spots ps ON b.spot_id = ps.id
+                 JOIN users u ON ps.user_id = u.id
+                 WHERE b.id = ?",
+                $bookingId
+            );
+
+            // 提交事务
+            db()->commit();
+
+            return [
+                'success' => true,
+                'message' => '预订创建成功',
+                'data' => formatBookingResponse($booking)
+            ];
+
+        } catch (Exception $e) {
+            db()->rollback();
+            throw $e;
+        }
+
+    } catch (Exception $e) {
+        return ['success' => false, 'error' => ['code' => 500, 'message' => '创建预订失败: ' . $e->getMessage()]];
+    }
+}
+
+/**
+ * 获取预订详情
+ */
+function getBookingDetail($bookingId) {
+    try {
+        $userId = getCurrentUserId();
+        if (!$userId) {
+            return ['success' => false, 'error' => ['code' => 401, 'message' => '请先登录']];
+        }
+
+        $booking = db()->querySingle(
+            "SELECT b.*,
+                    ps.title as spot_title,
+                    ps.address as spot_address,
+                    ps.price_per_hour,
+                    u.username as owner_username
+             FROM bookings b
+             JOIN parking_spots ps ON b.spot_id = ps.id
+             JOIN users u ON ps.user_id = u.id
+             WHERE b.id = ? AND (b.user_id = ? OR ps.user_id = ?)",
+            $bookingId, $userId, $userId
+        );
+
+        if (!$booking) {
+            return ['success' => false, 'error' => ['code' => 404, 'message' => '预订不存在或无权访问']];
+        }
+
+        return [
+            'success' => true,
+            'data' => formatBookingResponse($booking)
+        ];
+
+    } catch (Exception $e) {
+        return ['success' => false, 'error' => ['code' => 500, 'message' => '获取预订详情失败']];
+    }
+}
+
+/**
+ * 获取我的预订列表
+ */
+function getMyBookings() {
+    try {
+        $userId = getCurrentUserId();
+        if (!$userId) {
+            return ['success' => false, 'error' => ['code' => 401, 'message' => '请先登录']];
+        }
+
+        // 获取分页参数
+        $page = max(1, intval($_GET['page'] ?? 1));
+        $limit = max(1, min(50, intval($_GET['limit'] ?? 20)));
+        $offset = ($page - 1) * $limit;
+
+        // 获取预订列表
+        $bookings = db()->queryAll(
+            "SELECT b.*,
+                    ps.title as spot_title,
+                    ps.address as spot_address,
+                    ps.price_per_hour,
+                    u.username as owner_username
+             FROM bookings b
+             JOIN parking_spots ps ON b.spot_id = ps.id
+             JOIN users u ON ps.user_id = u.id
+             WHERE b.user_id = ?
+             ORDER BY b.created_at DESC
+             LIMIT ? OFFSET ?",
+            $userId, $limit, $offset
+        );
+
+        // 获取总数
+        $total = db()->querySingle("SELECT COUNT(*) as count FROM bookings WHERE user_id = ?", $userId);
+        $totalCount = $total['count'] ?? 0;
+
+        // 格式化响应
+        $formattedBookings = array_map('formatBookingResponse', $bookings);
+
+        return [
+            'success' => true,
+            'data' => [
+                'bookings' => $formattedBookings,
+                'total' => $totalCount,
+                'page' => $page,
+                'limit' => $limit,
+                'total_pages' => ceil($totalCount / $limit)
+            ]
+        ];
+
+    } catch (Exception $e) {
+        return ['success' => false, 'error' => ['code' => 500, 'message' => '获取预订列表失败']];
+    }
+}
+
+/**
+ * 取消预订
+ */
+function cancelBooking($bookingId, $data) {
+    try {
+        $userId = getCurrentUserId();
+        if (!$userId) {
+            return ['success' => false, 'error' => ['code' => 401, 'message' => '请先登录']];
+        }
+
+        // 获取预订信息
+        $booking = db()->querySingle(
+            "SELECT b.*, ps.user_id as spot_owner_id
+             FROM bookings b
+             JOIN parking_spots ps ON b.spot_id = ps.id
+             WHERE b.id = ? AND (b.user_id = ? OR ps.user_id = ?)",
+            $bookingId, $userId, $userId
+        );
+
+        if (!$booking) {
+            return ['success' => false, 'error' => ['code' => 404, 'message' => '预订不存在或无权操作']];
+        }
+
+        // 检查预订状态是否可以取消
+        $status = $booking['status'];
+        if (!in_array($status, ['pending', 'confirmed'])) {
+            return ['success' => false, 'error' => ['code' => 400, 'message' => '当前状态不能取消预订']];
+        }
+
+        // 确定取消方
+        $cancelledBy = ($userId == $booking['user_id']) ? 'user' : 'owner';
+        $cancellationReason = isset($data['reason']) ? trim($data['reason']) : null;
+
+        // 更新预订状态
+        db()->update('bookings', [
+            'status' => 'cancelled',
+            'cancelled_by' => $cancelledBy,
+            'cancellation_reason' => $cancellationReason,
+            'cancelled_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s')
+        ], ['id' => $bookingId]);
+
+        return [
+            'success' => true,
+            'message' => '预订取消成功'
+        ];
+
+    } catch (Exception $e) {
+        return ['success' => false, 'error' => ['code' => 500, 'message' => '取消预订失败']];
+    }
+}
+
+/**
+ * 格式化预订响应
+ */
+function formatBookingResponse($booking) {
+    if (!$booking) {
+        return null;
+    }
+
+    // 获取停车位图片
+    $spotImages = db()->queryAll(
+        "SELECT image_url FROM parking_spot_images WHERE spot_id = ? ORDER BY display_order",
+        $booking['spot_id']
+    );
+    $imageUrls = array_column($spotImages, 'image_url');
+
+    return [
+        'id' => intval($booking['id']),
+        'user_id' => intval($booking['user_id']),
+        'spot_id' => intval($booking['spot_id']),
+        'vehicle_plate_number' => $booking['vehicle_plate_number'],
+        'vehicle_brand' => $booking['vehicle_brand'],
+        'vehicle_model' => $booking['vehicle_model'],
+        'vehicle_color' => $booking['vehicle_color'],
+        'start_time' => $booking['start_time'],
+        'end_time' => $booking['end_time'],
+        'duration_hours' => floatval($booking['duration_hours']),
+        'total_price' => floatval($booking['total_price']),
+        'status' => $booking['status'],
+        'cancelled_by' => $booking['cancelled_by'],
+        'cancellation_reason' => $booking['cancellation_reason'],
+        'cancelled_at' => $booking['cancelled_at'],
+        'check_in_code' => $booking['check_in_code'],
+        'check_in_at' => $booking['check_in_at'],
+        'check_out_at' => $booking['check_out_at'],
+        'notes' => $booking['notes'],
+        'created_at' => $booking['created_at'],
+        'updated_at' => $booking['updated_at'],
+        'spot_title' => $booking['spot_title'],
+        'spot_address' => $booking['spot_address'],
+        'price_per_hour' => floatval($booking['price_per_hour']),
+        'owner_username' => $booking['owner_username'],
+        'spot_images' => $imageUrls
+    ];
+}
+
+/**
+ * 生成入场验证码
+ */
+function generateCheckInCode() {
+    return strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 6));
 }
 
 /**

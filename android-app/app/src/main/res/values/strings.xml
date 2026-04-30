@@ -222,4 +222,7 @@
     <!-- 详情页面字符串 -->
     <string name="price_per_hour">¥%.2f/小时</string>
     <string name="review_count_template">(%d条评价)</string>
+
+    <!-- 缺失的字符串 -->
+    <string name="hint_search_address_or_keyword">输入地址或关键词</string>
 </resources>

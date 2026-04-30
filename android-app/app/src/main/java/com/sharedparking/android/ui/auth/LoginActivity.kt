@@ -2,6 +2,7 @@ package com.sharedparking.android.ui.auth
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.widget.Toast
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
@@ -72,6 +73,11 @@ class LoginActivity : AppCompatActivity() {
         binding.btnSendCaptcha.setOnClickListener {
             sendCaptcha()
         }
+
+        // 演示模式点击
+        binding.tvDemoMode.setOnClickListener {
+            authViewModel.demoLogin()
+        }
     }
 
     /**
@@ -83,15 +89,18 @@ class LoginActivity : AppCompatActivity() {
             when (state) {
                 is AuthState.Loading -> {
                     showLoading(true)
+                    binding.tvDemoMode.visibility = View.GONE
                 }
                 is AuthState.Success -> {
                     showLoading(false)
+                    binding.tvDemoMode.visibility = View.GONE
                     Toast.makeText(this, "登录成功", Toast.LENGTH_SHORT).show()
                     navigateToMain()
                 }
                 is AuthState.Error -> {
                     showLoading(false)
                     showError(state.message)
+                    binding.tvDemoMode.visibility = View.VISIBLE
                 }
                 else -> {
                     showLoading(false)
@@ -229,7 +238,16 @@ class LoginActivity : AppCompatActivity() {
      * 开始验证码倒计时
      */
     private fun startCaptchaCountdown() {
-        // 实现倒计时逻辑
+        object : CountDownTimer(60000, 1000) {
+            override fun onTick(millisUntilFinished: Long) {
+                binding.btnSendCaptcha.text = "${millisUntilFinished / 1000}秒后重试"
+                binding.btnSendCaptcha.isEnabled = false
+            }
+            override fun onFinish() {
+                binding.btnSendCaptcha.text = "获取验证码"
+                binding.btnSendCaptcha.isEnabled = true
+            }
+        }.start()
     }
 
     /**

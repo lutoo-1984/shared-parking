@@ -5,16 +5,25 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.sharedparking.android.adapter.ParkingSpotAdapter
 import com.sharedparking.android.databinding.FragmentSearchBinding
+import com.sharedparking.android.model.ParkingSearchFilters
+import com.sharedparking.android.model.ParkingSpot
+import com.sharedparking.android.ui.parking.AdvancedFilterDialog
+import com.sharedparking.android.ui.parking.ParkingDetailActivity
+import com.sharedparking.android.viewmodel.ParkingViewModel
 
-/**
- * 搜索Fragment
- * 停车位搜索功能
- */
 class SearchFragment : Fragment() {
 
     private var _binding: FragmentSearchBinding? = null
     private val binding get() = _binding!!
+
+    private lateinit var parkingViewModel: ParkingViewModel
+    private lateinit var adapter: ParkingSpotAdapter
+
+    private var currentFilters = ParkingSearchFilters()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -28,44 +37,80 @@ class SearchFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        parkingViewModel = ViewModelProvider(requireActivity()).get(ParkingViewModel::class.java)
+
         setupUI()
+        setupRecyclerView()
+        observeData()
     }
 
-    /**
-     * 初始化UI
-     */
     private fun setupUI() {
-        // 设置搜索框点击监听
-        binding.searchView.setOnClickListener {
-            // 跳转到搜索Activity
-            ParkingSearchActivity.start(requireActivity())
+        // 搜索框输入监听
+        binding.searchView.setOnEditorActionListener { _, _, _ ->
+            performSearch()
+            true
         }
 
-        // 设置筛选按钮点击监听
+        // 筛选按钮
         binding.btnFilter.setOnClickListener {
-            // 显示筛选对话框
             showFilterDialog()
         }
 
-        // 设置地图/列表切换
-        binding.toggleView.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                // 地图视图
-                binding.rvParkingSpots.visibility = View.GONE
-                binding.mapView.visibility = View.VISIBLE
-            } else {
-                // 列表视图
-                binding.rvParkingSpots.visibility = View.VISIBLE
-                binding.mapView.visibility = View.GONE
-            }
+        // 地图/列表切换
+        binding.toggleView.setOnClickListener {
+            val isChecked = binding.toggleView.isChecked
+            binding.toggleView.text = if (isChecked) "列表视图" else "地图视图"
+            binding.rvParkingSpots.visibility = if (isChecked) View.GONE else View.VISIBLE
+            binding.mapView.visibility = if (isChecked) View.VISIBLE else View.GONE
+        }
+
+        // 下拉刷新
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            performSearch()
         }
     }
 
-    /**
-     * 显示筛选对话框
-     */
+    private fun setupRecyclerView() {
+        adapter = ParkingSpotAdapter(
+            onItemClick = { spot ->
+                ParkingDetailActivity.start(requireActivity() as androidx.appcompat.app.AppCompatActivity, spot.id)
+            },
+            onFavoriteClick = { spot ->
+                if (spot.isFavorite) {
+                    parkingViewModel.removeFavorite(spot.id)
+                } else {
+                    parkingViewModel.addFavorite(spot.id)
+                }
+            }
+        )
+        binding.rvParkingSpots.layoutManager = LinearLayoutManager(requireContext())
+        binding.rvParkingSpots.adapter = adapter
+    }
+
+    private fun observeData() {
+        parkingViewModel.currentSpots.observe(viewLifecycleOwner) { spots ->
+            adapter.updateSpots(spots)
+            binding.tvEmptyResults.visibility = if (spots.isEmpty()) View.VISIBLE else View.GONE
+            binding.rvParkingSpots.visibility = if (spots.isEmpty()) View.GONE else View.VISIBLE
+        }
+
+        parkingViewModel.searchState.observe(viewLifecycleOwner) { state ->
+            binding.swipeRefreshLayout.isRefreshing = state is com.sharedparking.android.viewmodel.ParkingSearchState.Loading
+        }
+    }
+
+    private fun performSearch() {
+        val keyword = binding.searchView.text?.toString()?.trim()
+        val filters = currentFilters.copy(keyword = keyword.takeIf { it?.isNotEmpty() == true })
+        parkingViewModel.searchParkingSpots(filters)
+    }
+
     private fun showFilterDialog() {
-        // 实现筛选对话框
+        val dialog = AdvancedFilterDialog.newInstance(currentFilters) { newFilters ->
+            currentFilters = newFilters
+            performSearch()
+        }
+        dialog.show(childFragmentManager, "AdvancedFilterDialog")
     }
 
     override fun onDestroyView() {

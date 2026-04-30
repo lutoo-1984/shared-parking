@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Widget.SharedParking.CardView"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardElevation="@dimen/elevation_small">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/spacing_medium">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_small"
+            android:text="退款信息"
+            android:textAppearance="@style/Text.Title.Small"
+            android:textColor="@color/text_primary" />
+
+        <!-- 退款金额 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_small"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="退款金额"
+                android:textAppearance="@style/Text.Body.Medium"
+                android:textColor="@color/text_secondary" />
+
+            <TextView
+                android:id="@+id/tvRefundAmount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="¥60.00"
+                android:textAppearance="@style/Text.Body.Medium"
+                android:textColor="@color/brand_primary"
+                tools:text="¥60.00" />
+
+        </LinearLayout>
+
+        <!-- 退款原因 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_small"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="退款原因"
+                android:textAppearance="@style/Text.Body.Medium"
+                android:textColor="@color/text_secondary" />
+
+            <TextView
+                android:id="@+id/tvRefundReason"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="用户申请退款"
+                android:textAppearance="@style/Text.Body.Medium"
+                android:textColor="@color/text_primary"
+                tools:text="用户申请退款" />
+
+        </LinearLayout>
+
+        <!-- 退款时间 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="退款时间"
+                android:textAppearance="@style/Text.Body.Medium"
+                android:textColor="@color/text_secondary" />
+
+            <TextView
+                android:id="@+id/tvRefundTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="2026-03-22 15:30:25"
+                android:textAppearance="@style/Text.Body.Medium"
+                android:textColor="@color/text_primary"
+                tools:text="2026-03-22 15:30:25" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

@@ -5,10 +5,13 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import com.bumptech.glide.Glide
+import com.google.android.material.tabs.TabLayoutMediator
 import com.sharedparking.android.R
 import com.sharedparking.android.databinding.ActivityParkingDetailBinding
 import com.sharedparking.android.model.ParkingSpot
+import com.sharedparking.android.model.SpotImage
 import com.sharedparking.android.viewmodel.ParkingViewModel
+import com.sharedparking.android.viewmodel.ParkingDetailState
 
 /**
  * 停车位详情Activity
@@ -85,7 +88,10 @@ class ParkingDetailActivity : AppCompatActivity() {
 
         // 绑定TabLayout和ViewPager2
         binding.tabLayout.apply {
-            setupWithViewPager(binding.viewPager)
+            // ViewPager2需要使用TabLayoutMediator
+            TabLayoutMediator(this, binding.viewPager) { tab, position ->
+                // 可以设置tab的文本或图标，这里留空
+            }.attach()
             setSelectedTabIndicator(null)
         }
     }
@@ -97,13 +103,13 @@ class ParkingDetailActivity : AppCompatActivity() {
         // 观察车位详情状态
         viewModel.spotDetailState.observe(this) { state ->
             when (state) {
-                is com.sharedparking.android.viewmodel.ParkingDetailState.Loading -> {
+                is ParkingDetailState.Loading -> {
                     showLoading()
                 }
-                is com.sharedparking.android.viewmodel.ParkingDetailState.Success -> {
+                is ParkingDetailState.Success -> {
                     showSuccess(state.spot)
                 }
-                is com.sharedparking.android.viewmodel.ParkingDetailState.Error -> {
+                is ParkingDetailState.Error -> {
                     showError(state.message)
                 }
                 else -> {}
@@ -181,23 +187,23 @@ class ParkingDetailActivity : AppCompatActivity() {
         binding.tvAddress.text = spot.address
 
         // 详情描述
-        binding.tvDescription.text = spot.description
+        binding.tvDescription.text = spot.description ?: "暂无描述"
 
         // 车位规格
-        binding.tvMaxHeight.text = "${spot.maxHeight}米"
-        binding.tvMaxWidth.text = "${spot.maxWidth}米"
+        binding.tvMaxHeight.text = "${spot.maxVehicleHeight ?: 2.0}米"
+        binding.tvMaxWidth.text = "${spot.maxVehicleWidth ?: 2.5}米"
         binding.tvAvailableSpots.text = "${spot.availableSpots}/${spot.totalSpots}"
 
         // 设施标签
         updateFacilityChips(spot)
 
         // 车主信息
-        binding.tvOwnerUsername.text = spot.owner?.username ?: "未知"
-        binding.tvOwnerRating.text = String.format("%.1f", spot.owner?.rating ?: 0.0)
-        binding.tvOwnerReviewCount.text = getString(R.string.review_count_template, spot.owner?.reviewCount ?: 0)
+        binding.tvOwnerUsername.text = spot.ownerUsername ?: "未知"
+        binding.tvOwnerRating.text = String.format("%.1f", spot.avgRating ?: 0.0)
+        binding.tvOwnerReviewCount.text = getString(R.string.review_count_template, spot.reviewCount)
 
         // 加载车主头像
-        spot.owner?.avatarUrl?.let { avatarUrl ->
+        spot.ownerAvatar?.let { avatarUrl ->
             Glide.with(this)
                 .load(avatarUrl)
                 .placeholder(R.drawable.ic_person)
@@ -211,10 +217,15 @@ class ParkingDetailActivity : AppCompatActivity() {
         updateImagePager(spot.images)
 
         // 如果有原价显示原价，否则隐藏
-        if (spot.originalPricePerHour != null && spot.originalPricePerHour > spot.pricePerHour) {
-            binding.tvOriginalPrice.text = getString(R.string.price_per_hour, spot.originalPricePerHour)
-            binding.tvOriginalPrice.visibility = View.VISIBLE
-        } else {
+        // 注意：ParkingSpot模型中没有originalPricePerHour字段，这里使用pricePerDay作为替代
+        spot.pricePerDay?.let { pricePerDay ->
+            if (pricePerDay > spot.pricePerHour * 24) {
+                binding.tvOriginalPrice.text = getString(R.string.price_per_hour, pricePerDay / 24)
+                binding.tvOriginalPrice.visibility = View.VISIBLE
+            } else {
+                binding.tvOriginalPrice.visibility = View.GONE
+            }
+        } ?: run {
             binding.tvOriginalPrice.visibility = View.GONE
         }
     }
@@ -234,9 +245,10 @@ class ParkingDetailActivity : AppCompatActivity() {
     /**
      * 更新图片轮播
      */
-    private fun updateImagePager(images: List<String>) {
-        imageAdapter.submitList(images)
-        if (images.isEmpty()) {
+    private fun updateImagePager(images: List<SpotImage>) {
+        val imageUrls = images.map { it.imageUrl }
+        imageAdapter.submitList(imageUrls)
+        if (imageUrls.isEmpty()) {
             // 如果没有图片，显示占位图
             imageAdapter.submitList(listOf("placeholder"))
         }
@@ -260,15 +272,11 @@ class ParkingDetailActivity : AppCompatActivity() {
      */
     private fun toggleFavorite() {
         if (currentSpotId != -1) {
-            val currentState = viewModel.favoriteState.value
-            if (currentState is com.sharedparking.android.viewmodel.FavoriteState.Success) {
-                if (currentState.isFavorite) {
-                    viewModel.removeFavorite(currentSpotId)
-                } else {
-                    viewModel.addFavorite(currentSpotId)
-                }
+            // 获取当前收藏按钮的状态
+            val isCurrentlyFavorite = binding.ivFavorite.contentDescription == "已收藏"
+            if (isCurrentlyFavorite) {
+                viewModel.removeFavorite(currentSpotId)
             } else {
-                // 默认添加收藏
                 viewModel.addFavorite(currentSpotId)
             }
         }
@@ -278,10 +286,18 @@ class ParkingDetailActivity : AppCompatActivity() {
      * 跳转到预订页面
      */
     private fun startBookingActivity() {
-        if (currentSpotId != -1) {
-            // 跳转到BookingActivity
+        val state = viewModel.spotDetailState.value
+        if (state is ParkingDetailState.Success && state.spot != null) {
+            val spot = state.spot
+            // 跳转到BookingActivity - 只传递ID，不传递整个对象
             val intent = android.content.Intent(this, com.sharedparking.android.ui.booking.BookingActivity::class.java).apply {
-                putExtra("spot_id", currentSpotId)
+                putExtra(com.sharedparking.android.ui.booking.BookingActivity.EXTRA_SPOT_ID, spot.id)
+            }
+            startActivity(intent)
+        } else if (currentSpotId != -1) {
+            // 如果没有停车位对象，只传递ID
+            val intent = android.content.Intent(this, com.sharedparking.android.ui.booking.BookingActivity::class.java).apply {
+                putExtra(com.sharedparking.android.ui.booking.BookingActivity.EXTRA_SPOT_ID, currentSpotId)
             }
             startActivity(intent)
         }
@@ -297,8 +313,7 @@ class ParkingDetailActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // 重置状态
-        viewModel.resetSpotDetailState()
+        // 只在需要时刷新收藏状态
         viewModel.resetFavoriteState()
     }
 

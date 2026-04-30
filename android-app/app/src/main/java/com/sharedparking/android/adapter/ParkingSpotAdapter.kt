@@ -138,7 +138,7 @@ class ParkingSpotAdapter(
                 }
                 else -> {
                     binding.chipStatus.text = "可预订"
-                    binding.chipStatus.setChipBackgroundColorResource(R.color.success)
+                    binding.chipStatus.setChipBackgroundColorResource(R.color.status_success)
                 }
             }
         }

@@ -6,7 +6,9 @@ import android.os.Handler
 import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
+import com.sharedparking.android.R
 import com.sharedparking.android.application.SharedParkingApp
+import com.sharedparking.android.ui.auth.LoginActivity
 import com.sharedparking.android.viewmodel.AuthViewModel
 
 /**

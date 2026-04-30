@@ -30,15 +30,11 @@
     <application
         android:name=".application.SharedParkingApp"
         android:allowBackup="true"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.SharedParking"
-        android:usesCleartextTraffic="true"
-        tools:targetApi="31">
+        android:usesCleartextTraffic="true">
 
         <!-- 启动Activity -->
         <activity
@@ -51,6 +47,12 @@
             </intent-filter>
         </activity>
 
+        <!-- 测试Activity -->
+        <activity
+            android:name=".ui.SimpleTestActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SharedParking" />
+
         <!-- 主Activity -->
         <activity
             android:name=".ui.MainActivity"
@@ -58,75 +60,73 @@
             android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- 登录Activity -->
+        <!-- 认证相关Activity -->
         <activity
             android:name=".ui.auth.LoginActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
-
-        <!-- 注册Activity -->
         <activity
             android:name=".ui.auth.RegisterActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- 停车位搜索Activity -->
+        <!-- 停车位相关Activity -->
         <activity
             android:name=".ui.parking.ParkingSearchActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
-
-        <!-- 停车位详情Activity -->
         <activity
             android:name=".ui.parking.ParkingDetailActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.parking.LocationPickerActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
-        <!-- 预订Activity -->
+        <!-- 预订相关Activity -->
         <activity
             android:name=".ui.booking.BookingActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.booking.BookingDetailActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
-        <!-- 支付Activity -->
+        <!-- 支付相关Activity -->
         <activity
             android:name=".ui.payment.PaymentActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
-
-        <!-- 个人中心Activity -->
         <activity
-            android:name=".ui.profile.ProfileActivity"
+            android:name=".ui.payment.PaymentDetailActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.payment.PaymentSuccessActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.payment.PaymentHistoryActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- 消息中心Activity -->
-        <activity
-            android:name=".ui.messages.MessagesActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
-
-        <!-- 我的车位Activity -->
+        <!-- 个人中心相关Activity -->
         <activity
             android:name=".ui.parking.MySpotsActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
-
-        <!-- 我的预订Activity -->
-        <activity
-            android:name=".ui.booking.MyBookingsActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
-
-        <!-- 创建车位Activity -->
         <activity
             android:name=".ui.parking.CreateSpotActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
-
-        <!-- 地图Activity -->
         <activity
-            android:name=".ui.map.MapActivity"
+            android:name=".ui.booking.MyBookingsActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.messages.MessagesActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
@@ -148,7 +148,7 @@
             </intent-filter>
         </receiver>
 
-        <!-- 文件提供者（用于文件分享） -->
+        <!-- 文件提供者（用于文件分享）- 暂时注释掉
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -158,6 +158,7 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+        -->
 
         <!-- 元数据 -->
         <!-- 百度地图API Key - 需要配置
@@ -166,9 +167,11 @@
             android:value="YOUR_BAIDU_MAP_API_KEY" />
         -->
 
+        <!-- 预加载字体 - 暂时注释掉
         <meta-data
             android:name="preloaded_fonts"
             android:resource="@array/preloaded_fonts" />
+        -->
 
     </application>
 

@@ -1,24 +1,26 @@
 package com.sharedparking.android.ui.home
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.sharedparking.android.adapter.ParkingSpotAdapter
 import com.sharedparking.android.databinding.FragmentHomeBinding
+import com.sharedparking.android.model.ParkingSearchFilters
+import com.sharedparking.android.ui.parking.ParkingDetailActivity
 import com.sharedparking.android.viewmodel.ParkingViewModel
 
-/**
- * 首页Fragment
- * 展示推荐停车位、最近搜索、快捷操作等
- */
 class HomeFragment : Fragment() {
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
     private lateinit var parkingViewModel: ParkingViewModel
+    private lateinit var adapter: ParkingSpotAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -32,82 +34,78 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // 初始化ViewModel
         parkingViewModel = ViewModelProvider(requireActivity()).get(ParkingViewModel::class.java)
 
-        // 初始化UI
         setupUI()
-
-        // 观察数据
+        setupRecyclerView()
         observeData()
-
-        // 加载数据
         loadData()
     }
 
-    /**
-     * 初始化UI
-     */
     private fun setupUI() {
-        // 设置刷新监听
         binding.swipeRefreshLayout.setOnRefreshListener {
             loadData()
         }
 
-        // 设置点击监听
         binding.btnSearchParking.setOnClickListener {
-            // 跳转到搜索页面
-            // findNavController().navigate(R.id.action_home_to_search)
+            val intent = Intent(requireActivity(), com.sharedparking.android.ui.parking.ParkingSearchActivity::class.java)
+            startActivity(intent)
         }
 
         binding.btnViewBookings.setOnClickListener {
-            // 跳转到预订页面
-            // findNavController().navigate(R.id.action_home_to_bookings)
+            // 切换到预订Tab
+            requireActivity().findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(
+                com.sharedparking.android.R.id.bottomNavigationView
+            )?.selectedItemId = com.sharedparking.android.R.id.navigation_bookings
         }
 
         binding.btnCreateSpot.setOnClickListener {
-            // 跳转到创建车位页面
-            // findNavController().navigate(R.id.action_home_to_create_spot)
+            val intent = Intent(requireActivity(), com.sharedparking.android.ui.parking.CreateSpotActivity::class.java)
+            startActivity(intent)
         }
     }
 
-    /**
-     * 观察数据变化
-     */
+    private fun setupRecyclerView() {
+        adapter = ParkingSpotAdapter(
+            onItemClick = { spot ->
+                ParkingDetailActivity.start(requireActivity() as androidx.appcompat.app.AppCompatActivity, spot.id)
+            },
+            onFavoriteClick = { spot ->
+                if (spot.isFavorite) {
+                    parkingViewModel.removeFavorite(spot.id)
+                } else {
+                    parkingViewModel.addFavorite(spot.id)
+                }
+            }
+        )
+        binding.rvRecommendations.layoutManager = LinearLayoutManager(requireContext())
+        binding.rvRecommendations.adapter = adapter
+    }
+
     private fun observeData() {
-        // 观察推荐停车位
-        parkingViewModel.recommendedSpots.observe(viewLifecycleOwner) { spots ->
-            // 更新推荐列表
+        parkingViewModel.currentSpots.observe(viewLifecycleOwner) { spots ->
             if (spots.isNotEmpty()) {
                 binding.tvEmptyRecommendations.visibility = View.GONE
                 binding.rvRecommendations.visibility = View.VISIBLE
-                // 设置适配器
+                adapter.updateSpots(spots.take(5)) // 首页只显示前5个
             } else {
                 binding.tvEmptyRecommendations.visibility = View.VISIBLE
                 binding.rvRecommendations.visibility = View.GONE
             }
         }
 
-        // 观察最近搜索
-        parkingViewModel.recentSearches.observe(viewLifecycleOwner) { searches ->
-            // 更新最近搜索
-        }
-
-        // 观察加载状态
-        parkingViewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            binding.swipeRefreshLayout.isRefreshing = isLoading
+        parkingViewModel.searchState.observe(viewLifecycleOwner) { state ->
+            binding.swipeRefreshLayout.isRefreshing = state is com.sharedparking.android.viewmodel.ParkingSearchState.Loading
         }
     }
 
-    /**
-     * 加载数据
-     */
     private fun loadData() {
-        // 加载推荐停车位
-        parkingViewModel.loadRecommendedSpots()
-
-        // 加载最近搜索
-        parkingViewModel.loadRecentSearches()
+        // 加载推荐停车位（使用默认搜索条件）
+        val filters = ParkingSearchFilters(
+            sortBy = "rating",
+            limit = 10
+        )
+        parkingViewModel.searchParkingSpots(filters)
     }
 
     override fun onDestroyView() {

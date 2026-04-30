@@ -22,13 +22,3 @@ data class LoginRequest(
     val loginType: String = "password" // password 或 verification_code
 )
 
-/**
- * 登录响应
- */
-data class LoginResponse(
-    @SerializedName("user")
-    val user: User? = null,
-
-    @SerializedName("token")
-    val token: String? = null
-)

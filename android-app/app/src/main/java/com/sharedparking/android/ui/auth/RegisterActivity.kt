@@ -3,6 +3,7 @@ package com.sharedparking.android.ui.auth
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.os.CountDownTimer
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
@@ -135,7 +136,7 @@ class RegisterActivity : AppCompatActivity() {
                 val isCodeValid = authViewModel.verifyCode(phone, captcha, "register")
                 if (isCodeValid) {
                     // 验证码正确，进行注册
-                    authViewModel.register(username, email, phone, password)
+                    authViewModel.register(username, email, phone, password, password, captcha)
                 } else {
                     showError("验证码错误或已过期")
                 }
@@ -267,7 +268,16 @@ class RegisterActivity : AppCompatActivity() {
      * 开始验证码倒计时
      */
     private fun startCaptchaCountdown() {
-        // 实现倒计时逻辑
+        object : CountDownTimer(60000, 1000) {
+            override fun onTick(millisUntilFinished: Long) {
+                binding.btnSendCaptcha.text = "${millisUntilFinished / 1000}秒后重试"
+                binding.btnSendCaptcha.isEnabled = false
+            }
+            override fun onFinish() {
+                binding.btnSendCaptcha.text = "获取验证码"
+                binding.btnSendCaptcha.isEnabled = true
+            }
+        }.start()
     }
 
     /**
