@@ -22,7 +22,9 @@ RUN docker-php-ext-install \
     && docker-php-ext-enable pdo_mysql
 
 # ===== Apache 配置 =====
-RUN a2enmod rewrite headers expires deflate
+RUN a2enmod rewrite headers expires deflate && \
+    a2dismod mpm_event && \
+    a2enmod mpm_prefork
 
 # 设置 DocumentRoot 到项目根目录（.htaccess 使用相对路径）
 ENV APACHE_DOCUMENT_ROOT=/var/www/html
