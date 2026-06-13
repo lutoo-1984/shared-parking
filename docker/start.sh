@@ -2,13 +2,12 @@
 # ============================================================
 # 共享停车位平台 - Docker 启动脚本（Nginx + PHP-FPM）
 # ============================================================
-set -e
 
 echo "========================================"
 echo "  共享停车位平台 - 启动中..."
 echo "========================================"
 
-# 目录权限
+# 创建必要目录并设置权限
 mkdir -p /var/www/html/uploads/spots /var/www/html/uploads/avatars /var/www/html/logs
 chmod -R 755 /var/www/html/uploads /var/www/html/logs
 
@@ -46,6 +45,7 @@ EOF
 # 等待数据库并初始化表结构
 if [ -n "$DB_HOST" ] && [ -n "$DB_PASSWORD" ]; then
     echo "→ 等待数据库就绪..."
+    DB_READY=0
     for i in $(seq 1 30); do
         if php -r "
             \$pdo = @new PDO(
@@ -56,31 +56,62 @@ if [ -n "$DB_HOST" ] && [ -n "$DB_PASSWORD" ]; then
             );
             echo 'connected';
         " 2>/dev/null | grep -q 'connected'; then
+            DB_READY=1
             echo "  → 数据库连接成功！"
+            break
+        fi
+        echo "  → 等待数据库... ($i/30)"
+        sleep 2
+    done
+
+    if [ "$DB_READY" -eq 1 ]; then
+        # 仅当 schema.sql 存在时才导入
+        if [ -f "/var/www/html/schema.sql" ]; then
             php -r "
                 try {
-                    \$pdo = new PDO('mysql:host=${DB_HOST};port=${DB_PORT:-3306};dbname=${DB_DATABASE:-shared_parking}','${DB_USERNAME:-root}','${DB_PASSWORD}');
+                    \$pdo = new PDO(
+                        'mysql:host=${DB_HOST};port=${DB_PORT:-3306};dbname=${DB_DATABASE:-shared_parking}',
+                        '${DB_USERNAME:-root}',
+                        '${DB_PASSWORD}'
+                    );
                     \$tables = \$pdo->query('SHOW TABLES')->fetchAll();
                     if (count(\$tables) === 0) {
                         echo '  → 导入数据库结构...';
                         \$sql = file_get_contents('/var/www/html/schema.sql');
                         \$pdo->exec(\$sql);
-                        echo '完成';
+                        echo ' 完成' . PHP_EOL;
+                    } else {
+                        echo '  → 数据库表已存在，跳过导入' . PHP_EOL;
                     }
-                } catch (Exception \$e) { echo '  ⚠ '.\$e->getMessage(); }
+                } catch (Exception \$e) {
+                    echo '  ⚠ ' . \$e->getMessage() . PHP_EOL;
+                }
             " 2>&1
-            break
+        else
+            echo "  → schema.sql 不存在，跳过数据库初始化"
         fi
-        sleep 2
-    done
+    else
+        echo "  ⚠ 数据库连接超时，继续启动服务..."
+    fi
 fi
 
 echo "========================================"
 echo "  ✅ 启动完成！  平台: Shared Parking"
 echo "========================================"
 
-# 启动 PHP-FPM（后台）
-php-fpm8.2 --daemonize || php-fpm --daemonize || true
+# 启动 PHP-FPM（后台，使用 -D 标志）
+echo "→ 启动 PHP-FPM..."
+if command -v php-fpm8.2 > /dev/null 2>&1; then
+    php-fpm8.2 -D
+elif command -v php-fpm > /dev/null 2>&1; then
+    php-fpm -D
+else
+    echo "✗ 未找到 PHP-FPM，退出"
+    exit 1
+fi
+
+echo "→ PHP-FPM 已启动"
 
 # 启动 Nginx（前台）
+echo "→ 启动 Nginx..."
 exec nginx -g "daemon off;"
