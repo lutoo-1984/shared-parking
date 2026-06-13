@@ -34,11 +34,11 @@ class ParkingMap {
                 zoom: zoom,
                 center: [lng, lat],
                 resizeEnable: true,
-                mapStyle: 'amap://styles/light' // 清新简约风格
+                mapStyle: 'amap://styles/light'
             });
 
-            // 添加地图控件
-            this.addMapControls();
+            // 异步加载控件插件
+            this.loadControls();
 
             // 尝试定位用户
             this.locateUser();
@@ -51,9 +51,18 @@ class ParkingMap {
     }
 
     /**
-     * 显示地图加载失败
+     * 异步加载高德地图控件插件
      */
-    showMapError() {
+    loadControls() {
+        if (!this.map) return;
+
+        AMap.plugin(['AMap.ToolBar', 'AMap.Scale', 'AMap.MapType'], () => {
+            this.map.addControl(new AMap.ToolBar({ position: 'LT' }));
+            this.map.addControl(new AMap.Scale({ position: 'LB' }));
+            this.map.addControl(new AMap.MapType({ position: 'RT', defaultType: 0 }));
+            console.log('→ 地图控件加载完成');
+        });
+    }
         const container = document.getElementById(this.containerId);
         if (!container) return;
         container.innerHTML = `
@@ -66,29 +75,6 @@ class ParkingMap {
                 </button>
             </div>
         `;
-    }
-
-    /**
-     * 添加地图控件
-     */
-    addMapControls() {
-        if (!this.map) return;
-
-        // 缩放工具栏
-        this.map.addControl(new AMap.ToolBar({
-            position: 'LT'
-        }));
-
-        // 比例尺
-        this.map.addControl(new AMap.Scale({
-            position: 'LB'
-        }));
-
-        // 地图类型切换
-        this.map.addControl(new AMap.MapType({
-            position: 'RT',
-            defaultType: 0
-        }));
     }
 
     /**

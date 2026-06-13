@@ -414,17 +414,20 @@ function includeHome() {
             const map = new ParkingMap('map-container');
             map.initMap(39.909186, 116.397389); // 默认北京坐标
 
-            // 模拟数据
-            const sampleSpots = [
-                {id: 1, title: '市中心地下停车场', latitude: 39.909186, longitude: 116.397389,
-                 price_per_hour: 15, address: '北京市朝阳区建国门外大街1号'},
-                {id: 2, title: '商业区停车位', latitude: 39.912345, longitude: 116.401234,
-                 price_per_hour: 12, address: '北京市朝阳区光华路'},
-                {id: 3, title: '小区露天车位', latitude: 39.907654, longitude: 116.395678,
-                 price_per_hour: 10, address: '北京市朝阳区建国里小区'},
-            ];
-
-            sampleSpots.forEach(spot => map.addParkingSpot(spot));
+            // 加载地图后显示示例停车位
+            setTimeout(() => {
+                if (map.map) {
+                    const sampleSpots = [
+                        {id: 1, title: '市中心地下停车场', latitude: 39.909186, longitude: 116.397389,
+                         price_per_hour: 15, address: '北京市朝阳区建国门外大街1号', is_available: true},
+                        {id: 2, title: '商业区停车位', latitude: 39.912345, longitude: 116.401234,
+                         price_per_hour: 12, address: '北京市朝阳区光华路', is_available: true},
+                        {id: 3, title: '小区露天车位', latitude: 39.907654, longitude: 116.395678,
+                         price_per_hour: 10, address: '北京市朝阳区建国里小区', is_available: true},
+                    ];
+                    sampleSpots.forEach(spot => map.addParkingSpotMarker(spot));
+                }
+            }, 500);
         }
     });
     </script>
