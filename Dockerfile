@@ -22,9 +22,18 @@ RUN docker-php-ext-install \
     && docker-php-ext-enable pdo_mysql
 
 # ===== Apache 配置 =====
-RUN a2enmod rewrite headers expires deflate && \
-    a2dismod mpm_event && \
-    a2enmod mpm_prefork
+RUN a2dismod -f mpm_event mpm_worker 2>/dev/null || true && \
+    a2enmod mpm_prefork rewrite headers expires deflate && \
+    # 设置 ServerName 防止 Apache 警告
+    echo "ServerName localhost" >> /etc/apache2/apache2.conf
+
+# 禁用 Apache 默认的 MPM 配置文件（避免多 MPM 冲突）
+RUN if [ -f /etc/apache2/mods-available/mpm_event.conf ]; then \
+        mv /etc/apache2/mods-available/mpm_event.conf /etc/apache2/mods-available/mpm_event.conf.bak; \
+    fi && \
+    if [ -f /etc/apache2/mods-available/mpm_worker.conf ]; then \
+        mv /etc/apache2/mods-available/mpm_worker.conf /etc/apache2/mods-available/mpm_worker.conf.bak; \
+    fi
 
 # 设置 DocumentRoot 到项目根目录（.htaccess 使用相对路径）
 ENV APACHE_DOCUMENT_ROOT=/var/www/html
