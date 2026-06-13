@@ -257,9 +257,9 @@ function includeFooter() {
         </div>
     </footer>
 
-    <script src="/assets/js/main.js"></script>
-    <script src="/assets/js/map.js"></script>
-    <script src="/assets/js/app.js"></script>
+    <script src="/assets/js/main.js?v=2.0"></script>
+    <script src="/assets/js/map.js?v=2.0"></script>
+    <script src="/assets/js/app.js?v=2.0"></script>
 </body>
 </html>
     <?php
