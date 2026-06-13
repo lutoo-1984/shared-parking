@@ -23,9 +23,32 @@ chown -R www-data:www-data /var/www/html/logs
 # Railway 传入 $PORT，Render 传入 $PORT
 if [ -n "$PORT" ]; then
     echo "→ 使用动态端口: $PORT"
+
+    # 强制修复 Apache MPM 冲突（运行时执行确保生效）
+    # 直接删除冲突模块，不留任何机会加载
+    rm -f /etc/apache2/mods-enabled/mpm_event.* /etc/apache2/mods-available/mpm_event.*
+    rm -f /etc/apache2/mods-enabled/mpm_worker.* /etc/apache2/mods-available/mpm_worker.*
+
+    # 确保 prefork 已启用
+    a2enmod mpm_prefork 2>/dev/null || true
+
+    # 双重保险：检查是否还有多 MPM
+    mpm_count=$(ls /etc/apache2/mods-enabled/mpm_*.load 2>/dev/null | wc -l)
+    if [ "$mpm_count" -ne 1 ]; then
+        echo "→ 警告: 检测到 $mpm_count 个 MPM 模块，强制修复..."
+        # 只保留 prefork
+        for f in /etc/apache2/mods-enabled/mpm_*.load; do
+            if echo "$f" | grep -q "prefork"; then continue; fi
+            rm -f "$f"
+            rm -f "${f%.load}.conf"
+        done
+    fi
+    echo "→ Apache MPM 已修复: prefork"
+
     # 修改 Apache 监听端口
     sed -i "s/Listen 80/Listen $PORT/g" /etc/apache2/ports.conf
     sed -i "s/:80>/:$PORT>/g" /etc/apache2/sites-available/000-default.conf
+    # 同时更新 APP_URL 环境变量如果没有设置的话
     # 同时更新 APP_URL 环境变量如果没有设置的话
     if [ -z "$APP_URL" ] && [ -n "$RAILWAY_PUBLIC_DOMAIN" ]; then
         export APP_URL="https://$RAILWAY_PUBLIC_DOMAIN"
