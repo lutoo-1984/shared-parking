@@ -4,6 +4,10 @@
 # ============================================================
 FROM debian:bookworm-slim
 
+# 手动修改计数器 — 用于强制 Railway 不使用构建缓存
+# 如果遇到缓存问题，增大此数字即可：1
+ARG CACHE_BUST=1
+
 LABEL maintainer="Shared Parking Team"
 LABEL description="共享停车位平台 - Nginx + PHP-FPM"
 
