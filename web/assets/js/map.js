@@ -63,6 +63,11 @@ class ParkingMap {
             console.log('→ 地图控件加载完成');
         });
     }
+
+    /**
+     * 显示地图加载失败
+     */
+    showMapError() {
         const container = document.getElementById(this.containerId);
         if (!container) return;
         container.innerHTML = `
