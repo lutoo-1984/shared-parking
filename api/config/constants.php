@@ -97,7 +97,7 @@ defined('SUCCESS_DELETED') or define('SUCCESS_DELETED', '删除成功');
 defined('SUCCESS_OPERATION') or define('SUCCESS_OPERATION', '操作成功');
 
 // 地图API配置（高德地图）
-defined('AMAP_KEY') or define('AMAP_KEY', 'a3cd510ffc1871168cbee271105ad260');
+defined('AMAP_KEY') or define('AMAP_KEY', 'a0fe75e8b005b5a691cb0c716296e76f');
 defined('MAP_DEFAULT_ZOOM') or define('MAP_DEFAULT_ZOOM', 15);
 defined('MAP_MAX_ZOOM') or define('MAP_MAX_ZOOM', 18);
 defined('MAP_MIN_ZOOM') or define('MAP_MIN_ZOOM', 10);
