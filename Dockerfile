@@ -1,76 +1,60 @@
 # ============================================================
 # 共享停车位平台 - 生产 Dockerfile
-# 基于 PHP 8.2 Apache + Composer
+# 基于 Debian + Nginx + PHP-FPM（稳定、高性能）
 # ============================================================
-FROM php:8.2-apache-bookworm
+FROM debian:bookworm-slim
 
 LABEL maintainer="Shared Parking Team"
-LABEL description="共享停车位平台 - 后端API + Web前端"
+LABEL description="共享停车位平台 - Nginx + PHP-FPM"
 
-# ===== 系统依赖 =====
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libzip-dev \
+ENV DEBIAN_FRONTEND=noninteractive
+
+# ===== 系统包 =====
+RUN apt-get update && apt-get install -y \
+    nginx \
+    php8.2 \
+    php8.2-fpm \
+    php8.2-mysql \
+    php8.2-mbstring \
+    php8.2-bcmath \
+    php8.2-zip \
+    php8.2-xml \
+    php8.2-curl \
+    curl \
     unzip \
-    git \
     && rm -rf /var/lib/apt/lists/*
 
-# ===== PHP 扩展 =====
-RUN docker-php-ext-install \
-    pdo_mysql \
-    zip \
-    bcmath \
-    && docker-php-ext-enable pdo_mysql
+# ===== Composer 官方安装 =====
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# ===== Apache 配置 =====
-RUN a2enmod rewrite headers expires deflate && \
-    echo "ServerName localhost" >> /etc/apache2/apache2.conf
-
-# 禁用冲突的 MPM 模块（直接删文件，不留隐患）
-RUN rm -f /etc/apache2/mods-enabled/mpm_event.* && \
-    rm -f /etc/apache2/mods-available/mpm_event.* && \
-    rm -f /etc/apache2/mods-enabled/mpm_worker.* && \
-    rm -f /etc/apache2/mods-available/mpm_worker.* && \
-    a2enmod mpm_prefork
-
-# 设置 DocumentRoot 到项目根目录（.htaccess 使用相对路径）
-ENV APACHE_DOCUMENT_ROOT=/var/www/html
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
-    /etc/apache2/sites-available/*.conf \
-    /etc/apache2/apache2.conf \
-    /etc/apache2/conf-available/*.conf
-
-# 允许 .htaccess（AllowOverride）
-RUN sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' \
-    /etc/apache2/apache2.conf
-
-# ===== Composer =====
-COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
-
-# ===== 复制项目文件 =====
+# ===== 项目文件 =====
 WORKDIR /var/www/html
 COPY . .
 
-# ===== 安装 PHP 依赖 =====
-RUN composer install --no-dev --optimize-autoloader --no-interaction \
-    || (echo "Composer install failed, trying with available packages" && \
-        composer install --no-dev --no-interaction --ignore-platform-reqs)
+# ===== Composer 依赖 =====
+RUN composer install --no-dev --optimize-autoloader --no-interaction || true
 
-# ===== 创建必要目录 =====
-RUN mkdir -p /var/www/html/uploads/spots \
-    /var/www/html/uploads/avatars \
-    /var/www/html/logs \
-    && chmod -R 755 /var/www/html/uploads \
-    /var/www/html/logs \
-    && chown -R www-data:www-data /var/www/html/uploads \
-    /var/www/html/logs
+# ===== 目录权限 =====
+RUN mkdir -p /var/www/html/uploads/spots /var/www/html/uploads/avatars /var/www/html/logs \
+    && chmod -R 755 /var/www/html/uploads /var/www/html/logs
 
 # ===== PHP 配置 =====
-COPY docker/php/custom.ini /usr/local/etc/php/conf.d/custom.ini
+COPY docker/php/custom.ini /etc/php/8.2/fpm/conf.d/99-custom.ini
+
+# ===== PHP-FPM socket 配置（与 Nginx 配置匹配）=====
+RUN sed -i 's|listen = /run/php/php8.2-fpm.sock|listen = /run/php/php8.2-fpm.sock|' /etc/php/8.2/fpm/pool.d/www.conf && \
+    sed -i 's/^listen.owner = www-data/listen.owner = www-data/' /etc/php/8.2/fpm/pool.d/www.conf && \
+    sed -i 's/^listen.group = www-data/listen.group = www-data/' /etc/php/8.2/fpm/pool.d/www.conf
+
+# ===== Nginx 配置 =====
+COPY docker/nginx/default.conf /etc/nginx/sites-available/default
+RUN rm -f /etc/nginx/sites-enabled/default && \
+    ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
 # ===== 启动脚本 =====
-COPY docker/start.sh /usr/local/bin/start.sh
-RUN chmod +x /usr/local/bin/start.sh
+COPY docker/start.sh /start.sh
+RUN chmod +x /start.sh
 
 EXPOSE 80
 
-CMD ["/usr/local/bin/start.sh"]
+CMD ["/start.sh"]
