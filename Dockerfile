@@ -48,7 +48,10 @@ COPY docker/php/custom.ini /etc/php/8.2/fpm/conf.d/99-custom.ini
 # ===== PHP-FPM socket 配置（与 Nginx 配置匹配）=====
 RUN sed -i 's|listen = /run/php/php8.2-fpm.sock|listen = /run/php/php8.2-fpm.sock|' /etc/php/8.2/fpm/pool.d/www.conf && \
     sed -i 's/^listen.owner = www-data/listen.owner = www-data/' /etc/php/8.2/fpm/pool.d/www.conf && \
-    sed -i 's/^listen.group = www-data/listen.group = www-data/' /etc/php/8.2/fpm/pool.d/www.conf
+    sed -i 's/^listen.group = www-data/listen.group = www-data/' /etc/php/8.2/fpm/pool.d/www.conf && \
+    # PHP-FPM 默认清空环境变量，改为保留，否则 DB_HOST 等变量传不到 PHP
+    sed -i 's/^;clear_env = no/clear_env = no/' /etc/php/8.2/fpm/pool.d/www.conf && \
+    echo 'clear_env = no' >> /etc/php/8.2/fpm/pool.d/www.conf
 
 # ===== Nginx 配置 =====
 COPY docker/nginx/default.conf /etc/nginx/sites-available/default
