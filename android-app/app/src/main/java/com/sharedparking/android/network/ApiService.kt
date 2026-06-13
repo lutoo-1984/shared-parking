@@ -15,13 +15,13 @@ interface ApiService {
      * 用户注册
      */
     @POST("auth/register")
-    suspend fun register(@Body request: RegisterRequest): Response<RegisterResponse>
+    suspend fun register(@Body request: RegisterRequest): Response<ApiResponse<RegisterResponse>>
 
     /**
      * 用户登录
      */
     @POST("auth/login")
-    suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
+    suspend fun login(@Body request: LoginRequest): Response<ApiResponse<LoginResponse>>
 
     /**
      * 发送验证码
@@ -198,6 +198,71 @@ interface ApiService {
         @Path("id") id: Int,
         @Body request: RefundRequest
     ): Response<ApiResponse<Payment>>
+
+    // ===== 消息相关接口 =====
+
+    /**
+     * 获取收件箱
+     */
+    @GET("messages")
+    suspend fun getInbox(
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 50
+    ): Response<ApiResponse<MessageListResponse>>
+
+    /**
+     * 获取与某用户的对话
+     */
+    @GET("messages/conversation/{user_id}")
+    suspend fun getConversation(
+        @Path("user_id") otherUserId: Int,
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 50
+    ): Response<ApiResponse<MessageListResponse>>
+
+    /**
+     * 发送消息
+     */
+    @POST("messages")
+    suspend fun sendMessage(
+        @Body request: SendMessageRequest
+    ): Response<ApiResponse<com.sharedparking.android.model.Message>>
+
+    /**
+     * 标记消息为已读
+     */
+    @PUT("messages/{id}/read")
+    suspend fun markMessageRead(@Path("id") id: Int): Response<ApiResponse<Any>>
+
+    /**
+     * 获取未读消息数
+     */
+    @GET("messages/unread")
+    suspend fun getUnreadCount(): Response<ApiResponse<UnreadCountResponse>>
+
+    /**
+     * 删除消息
+     */
+    @DELETE("messages/{id}")
+    suspend fun deleteMessage(@Path("id") id: Int): Response<ApiResponse<Any>>
+
+    // ===== 评价相关接口 =====
+
+    /**
+     * 创建评价
+     */
+    @POST("reviews")
+    suspend fun createReview(@Body request: CreateReviewRequest): Response<ApiResponse<com.sharedparking.android.model.Review>>
+
+    /**
+     * 获取车位评价
+     */
+    @GET("reviews/spot/{spot_id}")
+    suspend fun getSpotReviews(
+        @Path("spot_id") spotId: Int,
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 20
+    ): Response<ApiResponse<ReviewListResponse>>
 }
 
 /**
@@ -205,7 +270,7 @@ interface ApiService {
  */
 object ApiClient {
     // API基础URL - 需要根据实际环境配置
-    const val BASE_URL = "http://10.0.2.2:8080/api/" // Android模拟器访问本地服务器的地址
+    const val BASE_URL = "http://192.168.0.107:8080/api/" // 电脑局域网IP，手机需与电脑在同一WiFi
 
     // 从SharedPreferences或SecureStorage获取token
     var authToken: String? = null

@@ -73,7 +73,19 @@ class ParkingDetailActivity : AppCompatActivity() {
 
         // 联系车主按钮
         binding.btnContactOwner.setOnClickListener {
-            // TODO: 跳转到消息页面
+            val state = viewModel.spotDetailState.value
+            if (state is ParkingDetailState.Success && state.spot != null) {
+                val ownerId = state.spot.ownerId
+                val ownerName = state.spot.ownerUsername ?: "车主"
+                val intent = android.content.Intent(this, com.sharedparking.android.ui.messages.MessagesActivity::class.java).apply {
+                    putExtra("extra_other_user_id", ownerId)
+                    putExtra("extra_other_user_name", ownerName)
+                    putExtra("extra_spot_id", currentSpotId)
+                }
+                startActivity(intent)
+            } else {
+                android.widget.Toast.makeText(this, "请等待车位信息加载完成", android.widget.Toast.LENGTH_SHORT).show()
+            }
         }
 
         // 立即预订按钮

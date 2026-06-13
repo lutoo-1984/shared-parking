@@ -336,6 +336,11 @@ class Auth {
      * 验证验证码
      */
     public static function verifyCode($email, $phone, $code, $type = 'register') {
+        // 开发模式：万能验证码 000000
+        if (isDevelopment() && $code === '000000') {
+            return true;
+        }
+
         $result = db()->querySingle(
             "SELECT id, expires_at, is_used
              FROM verification_codes
@@ -399,6 +404,10 @@ class Auth {
 
         // 生成验证码
         $code = rand(100000, 999999);
+        // 开发模式：在服务器控制台打印验证码
+        if (isDevelopment()) {
+            error_log("[DEV] 验证码: {$code} (手机: {$phone})");
+        }
 
         // 保存验证码
         db()->execute(

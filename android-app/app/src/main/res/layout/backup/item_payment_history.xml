@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Widget.SharedParking.CardView"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="@dimen/spacing_small"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardElevation="@dimen/elevation_small">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/spacing_medium">
+
+        <!-- 顶部行：车位标题和状态 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_small"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tvSpotTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="小区地下停车场B区"
+                android:textAppearance="@style/Text.Body.Medium"
+                android:textColor="@color/text_primary"
+                tools:text="小区地下停车场B区" />
+
+            <TextView
+                android:id="@+id/tvPaymentStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_status_pending"
+                android:paddingHorizontal="@dimen/spacing_xsmall"
+                android:paddingVertical="2dp"
+                android:text="待支付"
+                android:textAppearance="@style/Text.Caption"
+                android:textColor="@color/white"
+                tools:text="已支付" />
+
+        </LinearLayout>
+
+        <!-- 中间行：支付信息和时间 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_small"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tvPaymentAmount"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="¥60.00"
+                android:textAppearance="@style/Text.Title.Medium"
+                android:textColor="@color/text_primary"
+                tools:text="¥60.00" />
+
+            <TextView
+                android:id="@+id/tvPaymentTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="03-22 14:30"
+                android:textAppearance="@style/Text.Caption"
+                android:textColor="@color/text_secondary"
+                tools:text="03-22 14:30" />
+
+        </LinearLayout>
+
+        <!-- 底部行：支付方式和交易号 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:id="@+id/ivPaymentMethod"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginEnd="@dimen/spacing_xsmall"
+                android:src="@drawable/ic_alipay"
+                android:tint="@color/payment_alipay"
+                tools:src="@drawable/ic_alipay" />
+
+            <TextView
+                android:id="@+id/tvPaymentMethod"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="支付宝"
+                android:textAppearance="@style/Text.Caption"
+                android:textColor="@color/text_secondary"
+                tools:text="支付宝" />
+
+            <TextView
+                android:id="@+id/tvTransactionId"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="202603221234..."
+                android:textAppearance="@style/Text.Caption"
+                android:textColor="@color/text_hint"
+                tools:text="202603221234..." />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

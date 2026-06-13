@@ -12,11 +12,21 @@ ini_set('display_errors', '1');
 define('API_ROOT', dirname(__FILE__));
 define('ROOT_PATH', dirname(API_ROOT));
 
+// Composer 自动加载
+$vendorAutoload = ROOT_PATH . '/vendor/autoload.php';
+if (file_exists($vendorAutoload)) {
+    require_once $vendorAutoload;
+}
+
 // 自动加载配置和工具类
 require_once API_ROOT . '/config/constants.php';
 require_once API_ROOT . '/config/database.php';
 require_once API_ROOT . '/lib/auth.php';
 require_once API_ROOT . '/lib/parking.php';
+require_once API_ROOT . '/lib/payment.php';
+require_once API_ROOT . '/lib/review.php';
+require_once API_ROOT . '/lib/message.php';
+require_once API_ROOT . '/lib/admin.php';
 
 // 设置响应头
 header('Content-Type: application/json; charset=utf-8');
@@ -88,6 +98,15 @@ function handleRequest($method, $endpoint, $pathSegments, $data) {
             return handleMessages($method, $pathSegments, $data);
         case 'admin':
             return handleAdmin($method, $pathSegments, $data);
+        case 'upload':
+            // 文件上传通过upload.php处理（POST multipart）
+            if ($method === 'POST') {
+                require_once API_ROOT . '/upload.php';
+                exit;
+            }
+            throw new Exception('方法不允许', 405);
+        case 'favorites':
+            return handleFavorites($method, $pathSegments, $data);
         case '':
             return [
                 'success' => true,
@@ -123,10 +142,15 @@ function handleAuth($method, $pathSegments, $data) {
                 case 'register':
                     try {
                         $result = Auth::register($data);
+                        // 注册后自动登录，返回 token + user 格式
+                        $loginResult = Auth::login([
+                            'email' => $data['email'],
+                            'password' => $data['password']
+                        ]);
                         return [
-                            'success' => true,
-                            'message' => SUCCESS_CREATED,
-                            'data' => $result
+                            'user' => $loginResult['user'],
+                            'token' => $loginResult['token'],
+                            'expires_in' => $loginResult['expires_in']
                         ];
                     } catch (Exception $e) {
                         return [
@@ -142,9 +166,9 @@ function handleAuth($method, $pathSegments, $data) {
                     try {
                         $result = Auth::login($data);
                         return [
-                            'success' => true,
-                            'message' => '登录成功',
-                            'data' => $result
+                            'user' => $result['user'],
+                            'token' => $result['token'],
+                            'expires_in' => $result['expires_in']
                         ];
                     } catch (Exception $e) {
                         return [
@@ -670,7 +694,8 @@ function handleParking($method, $pathSegments, $data) {
  */
 function getCurrentUserId() {
     $user = Auth::getCurrentUser();
-    return $user ? intval($user['id']) : null;
+    if (!$user) return null;
+    return intval($user['user_id'] ?? $user['id'] ?? 0) ?: null;
 }
 
 function handleBookings($method, $pathSegments, $data) {
@@ -690,8 +715,9 @@ function handleBookings($method, $pathSegments, $data) {
             }
             throw new Exception('操作不存在', 404);
         case 'PUT':
-            if (!empty($id) && $action === 'cancel') {
-                return cancelBooking($id, $data);
+            // PUT /api/bookings/{id}/cancel
+            if (!empty($action) && $id === 'cancel') {
+                return cancelBooking($action, $data);
             }
             throw new Exception('操作不存在', 404);
         default:
@@ -711,7 +737,7 @@ function createBooking($data) {
         }
 
         // 验证必填字段
-        $requiredFields = ['spot_id', 'vehicle_plate_number', 'vehicle_brand', 'vehicle_model', 'start_time', 'end_time'];
+        $requiredFields = ['spot_id', 'vehicle_plate_number', 'start_time', 'end_time'];
         foreach ($requiredFields as $field) {
             if (empty($data[$field])) {
                 return ['success' => false, 'error' => ['code' => 400, 'message' => "缺少必填字段: $field"]];
@@ -720,15 +746,12 @@ function createBooking($data) {
 
         $spotId = intval($data['spot_id']);
         $vehiclePlateNumber = trim($data['vehicle_plate_number']);
-        $vehicleBrand = trim($data['vehicle_brand']);
-        $vehicleModel = trim($data['vehicle_model']);
-        $vehicleColor = isset($data['vehicle_color']) ? trim($data['vehicle_color']) : null;
         $startTime = $data['start_time'];
         $endTime = $data['end_time'];
         $notes = isset($data['notes']) ? trim($data['notes']) : null;
 
         // 验证停车位是否存在且可用
-        $spot = db()->querySingle("SELECT * FROM parking_spots WHERE id = ? AND status = 'active'", $spotId);
+        $spot = db()->querySingle("SELECT * FROM parking_spots WHERE id = ? AND is_active = 1 AND is_approved = 1", [$spotId]);
         if (!$spot) {
             return ['success' => false, 'error' => ['code' => 404, 'message' => '停车位不存在或不可用']];
         }
@@ -764,7 +787,16 @@ function createBooking($data) {
         }
 
         // 检查时间冲突
-        $conflictingBookings = db()->queryAll(
+        $conflictingBookingsParams = [
+            $spotId,
+            $endDateTime->format('Y-m-d H:i:s'),
+            $startDateTime->format('Y-m-d H:i:s'),
+            $startDateTime->format('Y-m-d H:i:s'),
+            $endDateTime->format('Y-m-d H:i:s'),
+            $startDateTime->format('Y-m-d H:i:s'),
+            $endDateTime->format('Y-m-d H:i:s')
+        ];
+        $conflictingBookings = db()->query(
             "SELECT id FROM bookings
              WHERE spot_id = ?
              AND status IN ('pending', 'confirmed', 'in_progress')
@@ -773,13 +805,7 @@ function createBooking($data) {
                  (start_time >= ? AND start_time < ?) OR
                  (end_time > ? AND end_time <= ?)
              )",
-            $spotId,
-            $endDateTime->format('Y-m-d H:i:s'),
-            $startDateTime->format('Y-m-d H:i:s'),
-            $startDateTime->format('Y-m-d H:i:s'),
-            $endDateTime->format('Y-m-d H:i:s'),
-            $startDateTime->format('Y-m-d H:i:s'),
-            $endDateTime->format('Y-m-d H:i:s')
+            $conflictingBookingsParams
         );
 
         if (!empty($conflictingBookings)) {
@@ -798,23 +824,24 @@ function createBooking($data) {
 
         try {
             // 创建预订记录
-            $bookingId = db()->insert('bookings', [
-                'user_id' => $userId,
-                'spot_id' => $spotId,
-                'vehicle_plate_number' => $vehiclePlateNumber,
-                'vehicle_brand' => $vehicleBrand,
-                'vehicle_model' => $vehicleModel,
-                'vehicle_color' => $vehicleColor,
-                'start_time' => $startDateTime->format('Y-m-d H:i:s'),
-                'end_time' => $endDateTime->format('Y-m-d H:i:s'),
-                'duration_hours' => $durationHours,
-                'total_price' => $totalPrice,
-                'status' => 'pending',
-                'check_in_code' => $checkInCode,
-                'notes' => $notes,
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s')
-            ]);
+            $bookingData = [
+                $userId,
+                $spotId,
+                $vehiclePlateNumber,
+                $startDateTime->format('Y-m-d H:i:s'),
+                $endDateTime->format('Y-m-d H:i:s'),
+                $durationHours,
+                $totalPrice,
+                'pending',
+                $checkInCode,
+                $notes,
+                date('Y-m-d H:i:s'),
+                date('Y-m-d H:i:s')
+            ];
+            $bookingId = db()->insert(
+                "INSERT INTO bookings (user_id, spot_id, vehicle_plate_number, start_time, end_time, duration_hours, total_price, status, check_in_code, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                $bookingData
+            );
 
             // 获取创建的预订详情
             $booking = db()->querySingle(
@@ -825,9 +852,9 @@ function createBooking($data) {
                         u.username as owner_username
                  FROM bookings b
                  JOIN parking_spots ps ON b.spot_id = ps.id
-                 JOIN users u ON ps.user_id = u.id
+                 JOIN users u ON ps.owner_id = u.id
                  WHERE b.id = ?",
-                $bookingId
+                [$bookingId]
             );
 
             // 提交事务
@@ -840,7 +867,7 @@ function createBooking($data) {
             ];
 
         } catch (Exception $e) {
-            db()->rollback();
+            db()->rollBack();
             throw $e;
         }
 
@@ -867,9 +894,9 @@ function getBookingDetail($bookingId) {
                     u.username as owner_username
              FROM bookings b
              JOIN parking_spots ps ON b.spot_id = ps.id
-             JOIN users u ON ps.user_id = u.id
-             WHERE b.id = ? AND (b.user_id = ? OR ps.user_id = ?)",
-            $bookingId, $userId, $userId
+             JOIN users u ON ps.owner_id = u.id
+             WHERE b.id = ? AND (b.user_id = ? OR ps.owner_id = ?)",
+            [$bookingId, $userId, $userId]
         );
 
         if (!$booking) {
@@ -902,7 +929,7 @@ function getMyBookings() {
         $offset = ($page - 1) * $limit;
 
         // 获取预订列表
-        $bookings = db()->queryAll(
+        $bookings = db()->query(
             "SELECT b.*,
                     ps.title as spot_title,
                     ps.address as spot_address,
@@ -910,15 +937,15 @@ function getMyBookings() {
                     u.username as owner_username
              FROM bookings b
              JOIN parking_spots ps ON b.spot_id = ps.id
-             JOIN users u ON ps.user_id = u.id
+             JOIN users u ON ps.owner_id = u.id
              WHERE b.user_id = ?
              ORDER BY b.created_at DESC
              LIMIT ? OFFSET ?",
-            $userId, $limit, $offset
+            [$userId, $limit, $offset]
         );
 
         // 获取总数
-        $total = db()->querySingle("SELECT COUNT(*) as count FROM bookings WHERE user_id = ?", $userId);
+        $total = db()->querySingle("SELECT COUNT(*) as count FROM bookings WHERE user_id = ?", [$userId]);
         $totalCount = $total['count'] ?? 0;
 
         // 格式化响应
@@ -952,11 +979,11 @@ function cancelBooking($bookingId, $data) {
 
         // 获取预订信息
         $booking = db()->querySingle(
-            "SELECT b.*, ps.user_id as spot_owner_id
+            "SELECT b.*, ps.owner_id as spot_owner_id
              FROM bookings b
              JOIN parking_spots ps ON b.spot_id = ps.id
-             WHERE b.id = ? AND (b.user_id = ? OR ps.user_id = ?)",
-            $bookingId, $userId, $userId
+             WHERE b.id = ? AND (b.user_id = ? OR ps.owner_id = ?)",
+            [$bookingId, $userId, $userId]
         );
 
         if (!$booking) {
@@ -974,13 +1001,10 @@ function cancelBooking($bookingId, $data) {
         $cancellationReason = isset($data['reason']) ? trim($data['reason']) : null;
 
         // 更新预订状态
-        db()->update('bookings', [
-            'status' => 'cancelled',
-            'cancelled_by' => $cancelledBy,
-            'cancellation_reason' => $cancellationReason,
-            'cancelled_at' => date('Y-m-d H:i:s'),
-            'updated_at' => date('Y-m-d H:i:s')
-        ], ['id' => $bookingId]);
+        db()->execute(
+            "UPDATE bookings SET status = ?, cancelled_by = ?, cancellation_reason = ?, cancelled_at = ?, updated_at = ? WHERE id = ?",
+            ['cancelled', $cancelledBy, $cancellationReason, date('Y-m-d H:i:s'), date('Y-m-d H:i:s'), $bookingId]
+        );
 
         return [
             'success' => true,
@@ -1001,9 +1025,9 @@ function formatBookingResponse($booking) {
     }
 
     // 获取停车位图片
-    $spotImages = db()->queryAll(
-        "SELECT image_url FROM parking_spot_images WHERE spot_id = ? ORDER BY display_order",
-        $booking['spot_id']
+    $spotImages = db()->query(
+        "SELECT image_url FROM parking_spot_images WHERE spot_id = ? ORDER BY image_order, is_primary DESC",
+        [$booking['spot_id']]
     );
     $imageUrls = array_column($spotImages, 'image_url');
 
@@ -1012,9 +1036,9 @@ function formatBookingResponse($booking) {
         'user_id' => intval($booking['user_id']),
         'spot_id' => intval($booking['spot_id']),
         'vehicle_plate_number' => $booking['vehicle_plate_number'],
-        'vehicle_brand' => $booking['vehicle_brand'],
-        'vehicle_model' => $booking['vehicle_model'],
-        'vehicle_color' => $booking['vehicle_color'],
+        'vehicle_brand' => $booking['vehicle_brand'] ?? null,
+        'vehicle_model' => $booking['vehicle_model'] ?? null,
+        'vehicle_color' => $booking['vehicle_color'] ?? null,
         'start_time' => $booking['start_time'],
         'end_time' => $booking['end_time'],
         'duration_hours' => floatval($booking['duration_hours']),
@@ -1049,23 +1073,112 @@ function generateCheckInCode() {
  */
 function handlePayments($method, $pathSegments, $data) {
     $action = $pathSegments[1] ?? '';
+    $id = $pathSegments[2] ?? '';
+    $subAction = $pathSegments[3] ?? '';
 
     switch ($method) {
         case 'POST':
-            switch ($action) {
-                case 'create':
-                    return ['success' => true, 'message' => '创建支付功能待实现', 'data' => $data];
-                case 'notify':
-                    $gateway = $pathSegments[2] ?? '';
-                    return ['success' => true, 'message' => '支付通知处理功能待实现', 'gateway' => $gateway, 'data' => $data];
-                default:
-                    throw new Exception('操作不存在', 404);
+            // POST /api/payments/create
+            if ($action === 'create') {
+                try {
+                    $userId = getCurrentUserId();
+                    if (!$userId) return errorResponse(401, '请先登录');
+
+                    $result = Payment::createPayment($userId, $data);
+                    return [
+                        'success' => true,
+                        'message' => '支付订单创建成功',
+                        'data' => $result
+                    ];
+                } catch (Exception $e) {
+                    return errorResponse($e->getCode() ?: 500, $e->getMessage());
+                }
             }
-        case 'GET':
-            if (!empty($action)) {
-                return ['success' => true, 'message' => '获取支付状态功能待实现', 'payment_id' => $action];
+
+            // POST /api/payments/notify/{gateway}
+            if ($action === 'notify') {
+                try {
+                    $gateway = $id ?: 'unknown';
+                    $result = Payment::handleNotify($gateway, $data);
+                    return [
+                        'success' => true,
+                        'message' => $result['message'],
+                        'data' => $result['payment']
+                    ];
+                } catch (Exception $e) {
+                    return errorResponse($e->getCode() ?: 500, $e->getMessage());
+                }
             }
+
+            // POST /api/payments/{id}/refund
+            if (!empty($action) && $id === 'refund') {
+                try {
+                    $userId = getCurrentUserId();
+                    if (!$userId) return errorResponse(401, '请先登录');
+
+                    $paymentId = $action;
+                    $result = Payment::processRefund($paymentId, $userId, $data);
+                    return [
+                        'success' => true,
+                        'message' => '退款处理成功',
+                        'data' => $result
+                    ];
+                } catch (Exception $e) {
+                    return errorResponse($e->getCode() ?: 500, $e->getMessage());
+                }
+            }
+
             throw new Exception('操作不存在', 404);
+
+        case 'GET':
+            // GET /api/payments/booking/{booking_id}
+            if ($action === 'booking' && !empty($id)) {
+                try {
+                    $payments = db()->query(
+                        "SELECT p.* FROM payments p WHERE p.booking_id = ? ORDER BY p.created_at DESC LIMIT 1",
+                        [$id]
+                    );
+                    $payment = !empty($payments) ? Payment::getPaymentDetail($payments[0]['id']) : null;
+                    return [
+                        'success' => true,
+                        'data' => $payment
+                    ];
+                } catch (Exception $e) {
+                    return errorResponse($e->getCode() ?: 500, $e->getMessage());
+                }
+            }
+
+            // GET /api/payments/{id}
+            if (!empty($action)) {
+                try {
+                    $payment = Payment::getPaymentDetail($action);
+                    if (!$payment) throw new Exception('支付记录不存在', 404);
+                    return [
+                        'success' => true,
+                        'data' => $payment
+                    ];
+                } catch (Exception $e) {
+                    return errorResponse($e->getCode() ?: 500, $e->getMessage());
+                }
+            }
+
+            // GET /api/payments
+            try {
+                $userId = getCurrentUserId();
+                if (!$userId) return errorResponse(401, '请先登录');
+
+                $page = max(1, intval($_GET['page'] ?? 1));
+                $limit = max(1, min(100, intval($_GET['limit'] ?? 20)));
+
+                $result = Payment::getUserPayments($userId, $page, $limit);
+                return [
+                    'success' => true,
+                    'data' => $result
+                ];
+            } catch (Exception $e) {
+                return errorResponse($e->getCode() ?: 500, $e->getMessage());
+            }
+
         default:
             throw new Exception('方法不允许', 405);
     }
@@ -1076,18 +1189,76 @@ function handlePayments($method, $pathSegments, $data) {
  */
 function handleReviews($method, $pathSegments, $data) {
     $action = $pathSegments[1] ?? '';
+    $id = $pathSegments[2] ?? '';
 
     switch ($method) {
         case 'GET':
-            if ($action === 'user' && !empty($pathSegments[2])) {
-                return ['success' => true, 'message' => '获取用户评价功能待实现', 'user_id' => $pathSegments[2]];
+            if ($action === 'spot' && !empty($id)) {
+                try {
+                    $page = max(1, intval($_GET['page'] ?? 1));
+                    $limit = max(1, min(100, intval($_GET['limit'] ?? 20)));
+
+                    $result = Review::getSpotReviews($id, $page, $limit);
+                    return [
+                        'success' => true,
+                        'data' => $result
+                    ];
+                } catch (Exception $e) {
+                    return errorResponse($e->getCode() ?: 500, $e->getMessage());
+                }
+            } elseif ($action === 'user' && !empty($id)) {
+                try {
+                    $page = max(1, intval($_GET['page'] ?? 1));
+                    $limit = max(1, min(100, intval($_GET['limit'] ?? 20)));
+
+                    $result = Review::getUserReviews($id, $page, $limit);
+                    return [
+                        'success' => true,
+                        'data' => $result
+                    ];
+                } catch (Exception $e) {
+                    return errorResponse($e->getCode() ?: 500, $e->getMessage());
+                }
             }
             throw new Exception('操作不存在', 404);
+
         case 'POST':
             if (empty($action)) {
-                return ['success' => true, 'message' => '创建评价功能待实现', 'data' => $data];
+                try {
+                    $userId = getCurrentUserId();
+                    if (!$userId) return errorResponse(401, '请先登录');
+
+                    $result = Review::createReview($userId, $data);
+                    return [
+                        'success' => true,
+                        'message' => '评价创建成功',
+                        'data' => $result
+                    ];
+                } catch (Exception $e) {
+                    return errorResponse($e->getCode() ?: 500, $e->getMessage());
+                }
             }
             throw new Exception('操作不存在', 404);
+
+        case 'PUT':
+            if ($action === 'reply' && !empty($id)) {
+                try {
+                    $userId = getCurrentUserId();
+                    if (!$userId) return errorResponse(401, '请先登录');
+
+                    $reply = $data['reply'] ?? '';
+                    $result = Review::replyToReview($id, $userId, $reply);
+                    return [
+                        'success' => true,
+                        'message' => '回复成功',
+                        'data' => $result
+                    ];
+                } catch (Exception $e) {
+                    return errorResponse($e->getCode() ?: 500, $e->getMessage());
+                }
+            }
+            throw new Exception('操作不存在', 404);
+
         default:
             throw new Exception('方法不允许', 405);
     }
@@ -1098,23 +1269,98 @@ function handleReviews($method, $pathSegments, $data) {
  */
 function handleMessages($method, $pathSegments, $data) {
     $action = $pathSegments[1] ?? '';
+    $id = $pathSegments[2] ?? '';
 
     switch ($method) {
         case 'GET':
-            if (empty($action)) {
-                return ['success' => true, 'message' => '获取消息列表功能待实现'];
+            try {
+                $userId = getCurrentUserId();
+                if (!$userId) return errorResponse(401, '请先登录');
+
+                $page = max(1, intval($_GET['page'] ?? 1));
+                $limit = max(1, min(100, intval($_GET['limit'] ?? 20)));
+
+                if (!empty($id) && isset($pathSegments[2]) && $pathSegments[2] === 'conversation' && !empty($pathSegments[3])) {
+                    // GET /messages/conversation/{user_id}
+                    $otherUserId = $pathSegments[3];
+                    $result = Message::getConversation($userId, $otherUserId, $page, $limit);
+                } elseif (!empty($action) && $action === 'unread') {
+                    // GET /messages/unread
+                    $count = Message::getUnreadCount($userId);
+                    return ['success' => true, 'data' => ['unread_count' => $count]];
+                } elseif (!empty($action) && $action === 'outbox') {
+                    // GET /messages/outbox
+                    $result = Message::getOutbox($userId, $page, $limit);
+                } else {
+                    // GET /messages - 收件箱
+                    $result = Message::getInbox($userId, $page, $limit);
+                }
+
+                return ['success' => true, 'data' => $result];
+            } catch (Exception $e) {
+                return errorResponse($e->getCode() ?: 500, $e->getMessage());
             }
-            throw new Exception('操作不存在', 404);
+
         case 'POST':
-            if (empty($action)) {
-                return ['success' => true, 'message' => '发送消息功能待实现', 'data' => $data];
+            try {
+                $userId = getCurrentUserId();
+                if (!$userId) return errorResponse(401, '请先登录');
+
+                $result = Message::sendMessage($userId, $data);
+                return [
+                    'success' => true,
+                    'message' => '消息发送成功',
+                    'data' => $result
+                ];
+            } catch (Exception $e) {
+                return errorResponse($e->getCode() ?: 500, $e->getMessage());
             }
-            throw new Exception('操作不存在', 404);
+
         case 'PUT':
-            if (!empty($action) && $pathSegments[2] === 'read') {
-                return ['success' => true, 'message' => '标记消息为已读功能待实现', 'message_id' => $action];
+            if (empty($action)) {
+                try {
+                    $userId = getCurrentUserId();
+                    if (!$userId) return errorResponse(401, '请先登录');
+
+                    // PUT /messages - 标记所有为已读
+                    $result = Message::markAllAsRead($userId);
+                    return ['success' => true, 'message' => '所有消息已标记为已读', 'data' => $result];
+                } catch (Exception $e) {
+                    return errorResponse($e->getCode() ?: 500, $e->getMessage());
+                }
+            }
+
+            if (!empty($action) && ($pathSegments[2] ?? '') === 'read') {
+                try {
+                    $userId = getCurrentUserId();
+                    if (!$userId) return errorResponse(401, '请先登录');
+
+                    $result = Message::markAsRead($action, $userId);
+                    return [
+                        'success' => true,
+                        'message' => '消息已标记为已读',
+                        'data' => $result
+                    ];
+                } catch (Exception $e) {
+                    return errorResponse($e->getCode() ?: 500, $e->getMessage());
+                }
             }
             throw new Exception('操作不存在', 404);
+
+        case 'DELETE':
+            if (!empty($action)) {
+                try {
+                    $userId = getCurrentUserId();
+                    if (!$userId) return errorResponse(401, '请先登录');
+
+                    Message::deleteMessage($action, $userId);
+                    return ['success' => true, 'message' => '消息已删除'];
+                } catch (Exception $e) {
+                    return errorResponse($e->getCode() ?: 500, $e->getMessage());
+                }
+            }
+            throw new Exception('操作不存在', 404);
+
         default:
             throw new Exception('方法不允许', 405);
     }
@@ -1127,35 +1373,231 @@ function handleAdmin($method, $pathSegments, $data) {
     $action = $pathSegments[1] ?? '';
     $id = $pathSegments[2] ?? '';
 
-    // 这里应该验证管理员权限
     switch ($method) {
         case 'GET':
             switch ($action) {
-                case 'spots':
-                    return ['success' => true, 'message' => '获取所有停车位功能待实现'];
-                case 'users':
-                    return ['success' => true, 'message' => '获取所有用户功能待实现'];
                 case 'stats':
-                    return ['success' => true, 'message' => '获取统计信息功能待实现'];
+                    try {
+                        $result = Admin::getDashboardStats();
+                        return ['success' => true, 'data' => $result];
+                    } catch (Exception $e) {
+                        return errorResponse($e->getCode() ?: 500, $e->getMessage());
+                    }
+
+                case 'spots':
+                    try {
+                        $page = max(1, intval($_GET['page'] ?? 1));
+                        $limit = max(1, min(100, intval($_GET['limit'] ?? 20)));
+                        $result = Admin::getAllSpots($data, $page, $limit);
+                        return ['success' => true, 'data' => $result];
+                    } catch (Exception $e) {
+                        return errorResponse($e->getCode() ?: 500, $e->getMessage());
+                    }
+
+                case 'users':
+                    try {
+                        $page = max(1, intval($_GET['page'] ?? 1));
+                        $limit = max(1, min(100, intval($_GET['limit'] ?? 20)));
+                        $result = Admin::getAllUsers($data, $page, $limit);
+                        return ['success' => true, 'data' => $result];
+                    } catch (Exception $e) {
+                        return errorResponse($e->getCode() ?: 500, $e->getMessage());
+                    }
+
+                case 'settings':
+                    try {
+                        $result = Admin::getSystemSettings();
+                        return ['success' => true, 'data' => $result];
+                    } catch (Exception $e) {
+                        return errorResponse($e->getCode() ?: 500, $e->getMessage());
+                    }
+
                 case '':
-                    return ['success' => true, 'message' => '管理API'];
+                    return ['success' => true, 'message' => '管理后台API'];
+
                 default:
                     throw new Exception('操作不存在', 404);
             }
+
         case 'PUT':
-            if ($action === 'spots' && !empty($id) && $pathSegments[3] === 'approve') {
-                return ['success' => true, 'message' => '审核停车位功能待实现', 'spot_id' => $id];
+            if ($action === 'spots' && !empty($id) && ($pathSegments[3] ?? '') === 'approve') {
+                try {
+                    $result = Admin::approveSpot($id, $data);
+                    return $result;
+                } catch (Exception $e) {
+                    return errorResponse($e->getCode() ?: 500, $e->getMessage());
+                }
             }
+
+            if ($action === 'users' && !empty($id)) {
+                try {
+                    $result = Admin::manageUser($id, $data);
+                    return $result;
+                } catch (Exception $e) {
+                    return errorResponse($e->getCode() ?: 500, $e->getMessage());
+                }
+            }
+
+            if ($action === 'settings' && !empty($id)) {
+                try {
+                    $result = Admin::updateSystemSetting($id, $data['value'] ?? '');
+                    return $result;
+                } catch (Exception $e) {
+                    return errorResponse($e->getCode() ?: 500, $e->getMessage());
+                }
+            }
+
             throw new Exception('操作不存在', 404);
+
         default:
             throw new Exception('方法不允许', 405);
     }
 }
 
 /**
- * 发送成功响应
+ * 统一错误响应
+ */
+function errorResponse($code, $message) {
+    return [
+        'success' => false,
+        'error' => [
+            'code' => $code,
+            'message' => $message
+        ]
+    ];
+}
+
+/**
+ * 处理收藏相关请求
+ */
+/**
+ * 处理收藏相关请求
+ *
+ * 路由:
+ *   GET    /favorites        - 获取收藏列表
+ *   POST   /favorites/{id}   - 添加/切换收藏 (spot_id 在路径中)
+ *   DELETE /favorites/{id}   - 移除收藏
+ */
+function handleFavorites($method, $pathSegments, $data) {
+    $spotId = intval($pathSegments[1] ?? 0);
+
+    switch ($method) {
+        case 'GET':
+            try {
+                $userId = getCurrentUserId();
+                if (!$userId) return errorResponse(401, '请先登录');
+
+                $page = max(1, intval($_GET['page'] ?? 1));
+                $limit = max(1, min(100, intval($_GET['limit'] ?? 20)));
+                $offset = ($page - 1) * $limit;
+
+                $favorites = db()->query(
+                    "SELECT f.*, ps.title, ps.address, ps.price_per_hour, ps.latitude, ps.longitude,
+                            ps.is_covered, ps.has_lighting, ps.has_security, ps.has_charging, ps.has_cctv, ps.is_24h_access,
+                            (SELECT AVG(rating) FROM reviews WHERE spot_id = ps.id) as avg_rating,
+                            (SELECT COUNT(*) FROM reviews WHERE spot_id = ps.id) as review_count
+                     FROM favorites f
+                     JOIN parking_spots ps ON f.spot_id = ps.id
+                     WHERE f.user_id = ? AND ps.is_active = 1
+                     ORDER BY f.created_at DESC
+                     LIMIT ? OFFSET ?",
+                    [$userId, $limit, $offset]
+                );
+
+                foreach ($favorites as &$fav) {
+                    $image = db()->querySingle(
+                        "SELECT image_url FROM parking_spot_images WHERE spot_id = ? AND is_primary = 1 LIMIT 1",
+                        [$fav['spot_id']]
+                    );
+                    $fav['primary_image'] = $image ? $image['image_url'] : null;
+                }
+
+                $total = db()->querySingle(
+                    "SELECT COUNT(*) as count FROM favorites WHERE user_id = ?",
+                    [$userId]
+                )['count'];
+
+                return [
+                    'success' => true,
+                    'data' => [
+                        'favorites' => $favorites,
+                        'pagination' => [
+                            'page' => $page,
+                            'limit' => $limit,
+                            'total' => intval($total),
+                            'pages' => ceil($total / $limit)
+                        ]
+                    ]
+                ];
+            } catch (Exception $e) {
+                return errorResponse($e->getCode() ?: 500, $e->getMessage());
+            }
+
+        case 'POST':
+            try {
+                $userId = getCurrentUserId();
+                if (!$userId) return errorResponse(401, '请先登录');
+
+                // POST /favorites/{spot_id} - 从路径取spot_id
+                if ($spotId <= 0) throw new Exception('车位ID不能为空', 400);
+
+                $spot = db()->querySingle("SELECT id FROM parking_spots WHERE id = ? AND is_active = 1", [$spotId]);
+                if (!$spot) throw new Exception('停车位不存在', 404);
+
+                // 切换收藏状态
+                $existing = db()->querySingle(
+                    "SELECT id FROM favorites WHERE user_id = ? AND spot_id = ?",
+                    [$userId, $spotId]
+                );
+
+                if ($existing) {
+                    db()->execute("DELETE FROM favorites WHERE id = ?", [$existing['id']]);
+                    return ['success' => true, 'message' => '已取消收藏', 'data' => ['is_favorite' => false]];
+                } else {
+                    db()->insert(
+                        "INSERT INTO favorites (user_id, spot_id, created_at) VALUES (?, ?, NOW())",
+                        [$userId, $spotId]
+                    );
+                    return ['success' => true, 'message' => '收藏成功', 'data' => ['is_favorite' => true]];
+                }
+            } catch (Exception $e) {
+                return errorResponse($e->getCode() ?: 500, $e->getMessage());
+            }
+
+        case 'DELETE':
+            try {
+                $userId = getCurrentUserId();
+                if (!$userId) return errorResponse(401, '请先登录');
+
+                // DELETE /favorites/{spot_id}
+                if ($spotId <= 0) throw new Exception('车位ID不能为空', 400);
+
+                $deleted = db()->execute(
+                    "DELETE FROM favorites WHERE user_id = ? AND spot_id = ?",
+                    [$userId, $spotId]
+                );
+
+                return ['success' => true, 'message' => $deleted ? '已取消收藏' : '未找到收藏记录'];
+            } catch (Exception $e) {
+                return errorResponse($e->getCode() ?: 500, $e->getMessage());
+            }
+
+        default:
+            throw new Exception('方法不允许', 405);
+    }
+}
+
+/**
+ * 发送成功响应（自动识别错误返回格式并转为HTTP错误）
  */
 function sendResponse($data, $statusCode = 200) {
+    // 如果handler返回了错误格式，转成HTTP错误响应
+    if (is_array($data) && isset($data['success']) && $data['success'] === false && isset($data['error'])) {
+        $errCode = $data['error']['code'] ?? 400;
+        $errMsg = $data['error']['message'] ?? '未知错误';
+        sendError($errMsg, $errCode);
+        return;
+    }
     http_response_code($statusCode);
     echo json_encode([
         'success' => true,

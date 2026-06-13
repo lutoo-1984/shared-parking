@@ -88,8 +88,10 @@ dependencies {
     // 权限请求
     implementation 'com.guolindev.permissionx:permissionx:1.7.1'
 
-    // 地图服务（百度地图）- 暂时注释，需要下载SDK放入libs目录
-    // implementation files('libs/BaiduLBS_Android.jar')
+    // 地图服务（高德地图）- 取消注释后集成高德SDK
+    // implementation 'com.amap.api:map2d:10.0.0'
+    // implementation 'com.amap.api:location:6.4.3'
+    // implementation 'com.amap.api:search:9.7.0'
 
     // 测试库
     testImplementation 'junit:junit:4.13.2'

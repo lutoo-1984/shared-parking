@@ -1,0 +1,15 @@
+# ============================================================
+# 共享停车位平台 - Railway 部署配置 (Railpack)
+# Railpack 自动检测 PHP + Nginx + PHP-FPM
+# ============================================================
+
+[build]
+  # Railway 会自动检测 Dockerfile 使用 Docker 构建
+  # 如果 Railpack 检测到 Dockerfile，会优先使用 Docker
+  # 但 Railpack 需要 composer.json 里的 PHP 版本合法
+
+[deploy]
+  healthcheck_path = "/api/"
+  healthcheck_timeout = 30
+  restart_policy_type = "on_failure"
+  restart_policy_max_retries = 3

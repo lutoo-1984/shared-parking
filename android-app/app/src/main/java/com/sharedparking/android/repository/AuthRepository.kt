@@ -61,15 +61,18 @@ class AuthRepository(private val context: Context) {
 
                 if (response.isSuccessful) {
                     val body = response.body()
-                    if (body != null && body.token.isNotEmpty() && body.user.id > 0) {
+                    val loginData = body?.data
+                    if (body?.success == true && loginData != null && loginData.token.isNotEmpty() && loginData.user.id > 0) {
                         // 保存token和用户信息
-                        saveAuthData(body.token, body.user)
-                        Result.success(body.user)
+                        saveAuthData(loginData.token, loginData.user)
+                        Result.success(loginData.user)
                     } else {
-                        Result.failure(Exception("登录失败: 响应数据无效"))
+                        val errMsg = body?.error?.message ?: "登录失败: 响应数据无效"
+                        Result.failure(Exception(errMsg))
                     }
                 } else {
-                    Result.failure(Exception("网络请求失败: ${response.code()}"))
+                    val errMsg = parseErrorBody(response)
+                    Result.failure(Exception(errMsg))
                 }
             } catch (e: Exception) {
                 if (DemoMode.isEnabled) {
@@ -106,14 +109,18 @@ class AuthRepository(private val context: Context) {
 
                 if (response.isSuccessful) {
                     val body = response.body()
-                    if (body != null && body.user.id > 0) {
-                        // 注册成功，返回用户信息（但未登录）
-                        Result.success(body.user)
+                    val registerData = body?.data
+                    if (body?.success == true && registerData != null && registerData.user.id > 0) {
+                        // 注册成功，自动登录，保存token和用户信息
+                        saveAuthData(registerData.token, registerData.user)
+                        Result.success(registerData.user)
                     } else {
-                        Result.failure(Exception("注册失败: 响应数据无效"))
+                        val errMsg = body?.error?.message ?: "注册失败: 响应数据无效"
+                        Result.failure(Exception(errMsg))
                     }
                 } else {
-                    Result.failure(Exception("网络请求失败: ${response.code()}"))
+                    val errMsg = parseErrorBody(response)
+                    Result.failure(Exception(errMsg))
                 }
             } catch (e: Exception) {
                 if (DemoMode.isEnabled) {
@@ -355,6 +362,23 @@ class AuthRepository(private val context: Context) {
         val token = prefs.getString(KEY_AUTH_TOKEN, null)
         if (!token.isNullOrEmpty()) {
             ApiClient.setAuthToken(token)
+        }
+    }
+
+    /**
+     * 解析HTTP错误响应体，提取错误信息
+     */
+    private fun parseErrorBody(response: retrofit2.Response<*>): String {
+        return try {
+            val errBody = response.errorBody()?.string()
+            if (!errBody.isNullOrEmpty()) {
+                val errJson = com.google.gson.Gson().fromJson(errBody, ApiResponse::class.java)
+                errJson.error?.message ?: "网络请求失败: ${response.code()}"
+            } else {
+                "网络请求失败: ${response.code()}"
+            }
+        } catch (e: Exception) {
+            "网络请求失败: ${response.code()}"
         }
     }
 }

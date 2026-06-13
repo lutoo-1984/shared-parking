@@ -165,10 +165,10 @@
         -->
 
         <!-- 元数据 -->
-        <!-- 百度地图API Key - 需要配置
+        <!-- 高德地图 API Key - 配置你的Key
         <meta-data
-            android:name="com.baidu.lbsapi.API_KEY"
-            android:value="YOUR_BAIDU_MAP_API_KEY" />
+            android:name="com.amap.api.v2.apikey"
+            android:value="你的高德地图Key" />
         -->
 
         <!-- 预加载字体 - 暂时注释掉

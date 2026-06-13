@@ -10,7 +10,7 @@
         }
     ],
     "require": {
-        "php": "^7.4|^8.0",
+        "php": ">=8.0",
         "ext-pdo": "*",
         "ext-json": "*",
         "ext-mbstring": "*",
@@ -41,7 +41,10 @@
     "config": {
         "optimize-autoloader": true,
         "preferred-install": "dist",
-        "sort-packages": true
+        "sort-packages": true,
+        "audit": {
+            "ignore": ["GHSA-2x45-7fc3-mxwq"]
+        }
     },
     "minimum-stability": "stable",
     "prefer-stable": true

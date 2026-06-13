@@ -36,7 +36,7 @@
             android:layout_height="0dp"
             android:layout_weight="1">
 
-            <!-- 地图占位符（百度地图SDK暂时不可用） -->
+            <!-- 地图占位符（高德地图SDK暂时不可用） -->
             <View
                 android:id="@+id/mapView"
                 android:layout_width="match_parent"

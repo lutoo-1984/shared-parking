@@ -7,34 +7,59 @@ import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.sharedparking.android.databinding.ActivityMessagesBinding
+import com.sharedparking.android.model.Message
+import com.sharedparking.android.network.ApiClient
+import com.sharedparking.android.network.ApiService
+import com.sharedparking.android.utils.Resource
+import com.sharedparking.android.viewmodel.MessageViewModel
+import java.text.SimpleDateFormat
+import java.util.*
 
 class MessagesActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMessagesBinding
-    private lateinit var adapter: ConversationAdapter
+    private lateinit var viewModel: MessageViewModel
+    private lateinit var adapter: MessageAdapter
+
+    private var otherUserId: Int = 0
+    private var otherUserName: String? = null
+    private var spotId: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMessagesBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        otherUserId = intent.getIntExtra("extra_other_user_id", 0)
+        otherUserName = intent.getStringExtra("extra_other_user_name")
+        spotId = intent.getIntExtra("extra_spot_id", 0)
+
+        viewModel = ViewModelProvider(this)[MessageViewModel::class.java]
+
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setDisplayShowHomeEnabled(true)
+        supportActionBar?.title = otherUserName ?: "消息"
 
         setupRecyclerView()
         setupRefresh()
+        setupSendMessage()
+        observeData()
 
-        // 初始加载 - 空状态（等待后端API实现）
-        showEmptyState()
+        if (otherUserId > 0) {
+            viewModel.loadConversation(otherUserId)
+        } else {
+            viewModel.loadInbox()
+        }
     }
 
     private fun setupRecyclerView() {
-        adapter = ConversationAdapter { conversation ->
-            Toast.makeText(this, "消息详情功能开发中", Toast.LENGTH_SHORT).show()
+        adapter = MessageAdapter { message ->
+            Toast.makeText(this, message.content, Toast.LENGTH_SHORT).show()
         }
         binding.rvConversations.layoutManager = LinearLayoutManager(this)
         binding.rvConversations.adapter = adapter
@@ -42,15 +67,81 @@ class MessagesActivity : AppCompatActivity() {
 
     private fun setupRefresh() {
         binding.swipeRefresh.setOnRefreshListener {
-            binding.swipeRefresh.isRefreshing = false
-            showEmptyState()
+            if (otherUserId > 0) {
+                viewModel.loadConversation(otherUserId)
+            } else {
+                viewModel.loadInbox()
+            }
         }
     }
 
-    private fun showEmptyState() {
-        binding.progressBar.visibility = View.GONE
-        binding.rvConversations.visibility = View.GONE
-        binding.emptyState.visibility = View.VISIBLE
+    private fun setupSendMessage() {
+        binding.btnSend.setOnClickListener {
+            val content = binding.etMessage.text.toString().trim()
+            if (content.isEmpty()) {
+                Toast.makeText(this, "请输入消息内容", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            if (otherUserId <= 0) {
+                Toast.makeText(this, "请先从消息列表选择会话", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            viewModel.sendMessage(otherUserId, content, "", if (spotId > 0) spotId else null)
+            binding.etMessage.text.clear()
+        }
+    }
+
+    private fun observeData() {
+        viewModel.messagesState.observe(this) { resource ->
+            binding.swipeRefresh.isRefreshing = false
+            when (resource) {
+                is Resource.Loading -> {
+                    binding.progressBar.visibility = View.VISIBLE
+                    binding.rvConversations.visibility = View.GONE
+                    binding.emptyState.visibility = View.GONE
+                }
+                is Resource.Success -> {
+                    binding.progressBar.visibility = View.GONE
+                    val messages = resource.data ?: emptyList()
+                    adapter.submitList(messages)
+                    if (messages.isEmpty()) {
+                        binding.emptyState.visibility = View.VISIBLE
+                        binding.rvConversations.visibility = View.GONE
+                    } else {
+                        binding.emptyState.visibility = View.GONE
+                        binding.rvConversations.visibility = View.VISIBLE
+                        binding.rvConversations.smoothScrollToPosition(messages.size - 1)
+                    }
+                }
+                is Resource.Error -> {
+                    binding.progressBar.visibility = View.GONE
+                    binding.emptyState.visibility = View.VISIBLE
+                    binding.rvConversations.visibility = View.GONE
+                    Toast.makeText(this, resource.message ?: "加载失败", Toast.LENGTH_SHORT).show()
+                }
+                else -> {}
+            }
+        }
+
+        viewModel.sendState.observe(this) { resource ->
+            when (resource) {
+                is Resource.Loading -> {
+                    binding.btnSend.isEnabled = false
+                    binding.btnSend.text = "发送中..."
+                }
+                is Resource.Success -> {
+                    binding.btnSend.isEnabled = true
+                    binding.btnSend.text = "发送"
+                    otherUserId?.let { viewModel.loadConversation(it) }
+                }
+                is Resource.Error -> {
+                    binding.btnSend.isEnabled = true
+                    binding.btnSend.text = "发送"
+                    Toast.makeText(this, resource.message ?: "发送失败", Toast.LENGTH_SHORT).show()
+                }
+                else -> {}
+            }
+        }
     }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -60,16 +151,16 @@ class MessagesActivity : AppCompatActivity() {
 }
 
 /**
- * 会话列表适配器
+ * 消息列表适配器
  */
-private class ConversationAdapter(
-    private val onItemClick: (Conversation) -> Unit
-) : RecyclerView.Adapter<ConversationAdapter.ViewHolder>() {
+class MessageAdapter(
+    private val onItemClick: (Message) -> Unit
+) : RecyclerView.Adapter<MessageAdapter.ViewHolder>() {
 
-    private var conversations: List<Conversation> = emptyList()
+    private var messages: List<Message> = emptyList()
 
-    fun submitList(list: List<Conversation>) {
-        conversations = list
+    fun submitList(list: List<Message>) {
+        messages = list
         notifyDataSetChanged()
     }
 
@@ -80,34 +171,22 @@ private class ConversationAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(conversations[position])
+        holder.bind(messages[position])
     }
 
-    override fun getItemCount(): Int = conversations.size
+    override fun getItemCount(): Int = messages.size
 
     class ViewHolder(
         itemView: View,
-        private val onItemClick: (Conversation) -> Unit
+        private val onItemClick: (Message) -> Unit
     ) : RecyclerView.ViewHolder(itemView) {
         private val tvTitle: TextView = itemView.findViewById(android.R.id.text1)
         private val tvSubtitle: TextView = itemView.findViewById(android.R.id.text2)
 
-        fun bind(conversation: Conversation) {
-            tvTitle.text = conversation.otherUserName
-            tvSubtitle.text = conversation.lastMessage
-            itemView.setOnClickListener { onItemClick(conversation) }
+        fun bind(message: Message) {
+            tvTitle.text = message.senderUsername ?: "用户#${message.senderId}"
+            tvSubtitle.text = message.content.take(100)
+            itemView.setOnClickListener { onItemClick(message) }
         }
     }
 }
-
-/**
- * 会话数据类
- */
-private data class Conversation(
-    val id: Int,
-    val otherUserId: Int,
-    val otherUserName: String,
-    val lastMessage: String,
-    val unreadCount: Int,
-    val lastMessageTime: String
-)

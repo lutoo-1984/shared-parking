@@ -90,8 +90,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:text="发布停车位"
-            app:cornerRadius="8dp"
-            style="@style/Widget.Material3.Button.Tonal" />
+            app:cornerRadius="8dp" />
 
     </LinearLayout>
 

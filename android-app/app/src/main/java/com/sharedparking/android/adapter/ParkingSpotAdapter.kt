@@ -98,9 +98,18 @@ class ParkingSpotAdapter(
             }
             binding.tvPrice.text = priceText
 
-            // 设置距离（如果有）
-            // TODO: 需要计算实际距离，暂时显示空
-            binding.tvDistance.visibility = View.GONE
+            // 设置距离（如果有坐标则计算）
+            val distance = spot.distance
+            if (distance != null && distance > 0) {
+                binding.tvDistance.visibility = View.VISIBLE
+                binding.tvDistance.text = if (distance < 1) {
+                    "${(distance * 1000).toInt()}m"
+                } else {
+                    String.format("%.1fkm", distance)
+                }
+            } else {
+                binding.tvDistance.visibility = View.GONE
+            }
 
             // 设置收藏状态
             val favoriteIcon = if (spot.isFavorite) {

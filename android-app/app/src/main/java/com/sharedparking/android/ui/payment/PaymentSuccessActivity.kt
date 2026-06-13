@@ -6,9 +6,11 @@ import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
 import com.sharedparking.android.R
-import com.sharedparking.android.model.Payment
 import com.sharedparking.android.ui.booking.BookingDetailActivity
+import com.sharedparking.android.viewmodel.PaymentViewModel
+import com.sharedparking.android.utils.Resource
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -23,6 +25,7 @@ class PaymentSuccessActivity : AppCompatActivity() {
     private lateinit var tvPaidTime: TextView
     private lateinit var btnViewBooking: Button
     private lateinit var btnBackToHome: Button
+    private lateinit var viewModel: PaymentViewModel
 
     private var paymentId: Int = 0
     private var bookingId: Int = 0
@@ -31,13 +34,20 @@ class PaymentSuccessActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_payment_success)
 
-        // 获取传递的数据 - 现在只传递ID
         paymentId = intent.getIntExtra("extra_payment_id", 0)
         bookingId = intent.getIntExtra("extra_booking_id", 0)
+
+        viewModel = ViewModelProvider(this)[PaymentViewModel::class.java]
 
         initViews()
         setupUI()
         setupClickListeners()
+        observeData()
+
+        // 如果有paymentId，从服务器获取支付详情
+        if (paymentId > 0) {
+            viewModel.getPaymentDetail(paymentId)
+        }
     }
 
     private fun initViews() {
@@ -48,25 +58,64 @@ class PaymentSuccessActivity : AppCompatActivity() {
         btnViewBooking = findViewById(R.id.btnViewBooking)
         btnBackToHome = findViewById(R.id.btnBackToHome)
 
-        // 设置Toolbar
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = "支付成功"
     }
 
     private fun setupUI() {
-        // TODO: 通过paymentId从服务器获取支付详情
-        // 暂时显示占位信息
+        // 显示占位信息，API返回后更新
         tvPaymentAmount.text = "支付成功"
-        tvPaymentMethod.text = "支付宝"
+        tvPaymentMethod.text = "处理中..."
         tvTransactionId.text = "交易处理中"
         tvPaidTime.text = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
 
-        // 根据支付方式设置图标颜色
-        setPaymentMethodColor(com.sharedparking.android.model.PaymentMethod.ALIPAY)
-
-        // 隐藏查看订单按钮如果没有bookingId
         if (bookingId <= 0) {
             btnViewBooking.visibility = View.GONE
+        }
+    }
+
+    private fun observeData() {
+        viewModel.paymentDetailState.observe(this) { resource ->
+            when (resource) {
+                is Resource.Success -> {
+                    val payment = resource.data
+                    if (payment != null) {
+                        tvPaymentAmount.text = String.format("¥%.2f", payment.amount)
+                        tvTransactionId.text = payment.transactionId ?: "N/A"
+                        tvPaidTime.text = payment.paidAt ?: SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+
+                        val methodText = when (payment.paymentMethod) {
+                            "alipay" -> "支付宝"
+                            "wechat" -> "微信支付"
+                            "credit_card" -> "信用卡"
+                            "wallet" -> "钱包支付"
+                            else -> payment.paymentMethod ?: "未知"
+                        }
+                        tvPaymentMethod.text = methodText
+
+                        val method = com.sharedparking.android.model.PaymentMethod.fromString(payment.paymentMethod)
+                        val colorRes = when (method) {
+                            com.sharedparking.android.model.PaymentMethod.ALIPAY -> R.color.payment_alipay
+                            com.sharedparking.android.model.PaymentMethod.WECHAT -> R.color.payment_wechat
+                            com.sharedparking.android.model.PaymentMethod.CREDIT_CARD -> R.color.payment_credit_card
+                            com.sharedparking.android.model.PaymentMethod.WALLET -> R.color.payment_wallet
+                        }
+                        tvPaymentMethod.setTextColor(getColor(colorRes))
+
+                        if (payment.bookingId > 0) {
+                            bookingId = payment.bookingId
+                            btnViewBooking.visibility = View.VISIBLE
+                        }
+                    }
+                }
+                is Resource.Error -> {
+                    // API调用失败，显示默认数据
+                    tvPaymentAmount.text = "支付成功"
+                    tvPaymentMethod.text = "支付宝"
+                    tvTransactionId.text = "交易处理中"
+                }
+                else -> {}
+            }
         }
     }
 
@@ -92,7 +141,6 @@ class PaymentSuccessActivity : AppCompatActivity() {
         }
 
         btnBackToHome.setOnClickListener {
-            // 返回主页
             setResult(RESULT_OK)
             finish()
         }
@@ -104,7 +152,6 @@ class PaymentSuccessActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        // 返回时直接关闭，不返回支付页面
         setResult(RESULT_OK)
         super.onBackPressed()
     }
