@@ -96,11 +96,15 @@ if [ -n "$DB_HOST" ] && [ -n "$DB_PASSWORD" ]; then
                     );
                     // 检查是否有表
                     \$tables = \$pdo->query('SHOW TABLES')->fetchAll();
-                    if (count(\$tables) === 0) {
-                        echo '  → 导入数据库结构...';
-                        \$sql = file_get_contents('/var/www/html/schema.sql');
-                        \$pdo->exec(\$sql);
-                        echo '完成';
+                    if (count(\\$tables) === 0) {
+                        if (file_exists('/var/www/html/schema.sql')) {
+                            echo '  → 导入数据库结构...';
+                            \\$sql = file_get_contents('/var/www/html/schema.sql');
+                            \\$pdo->exec(\\$sql);
+                            echo '完成';
+                        } else {
+                            echo '  ℹ schema.sql not found, skipping auto-import';
+                        }
                     }
                 } catch (Exception \$e) {
                     echo '  ⚠ 自动导入失败: ' . \$e->getMessage();
